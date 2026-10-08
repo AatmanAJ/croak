@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="650" viewBox="100 230 800 650">
+    <mask id="mono" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1000">
+  <defs>
+    <clipPath id="m-eye0"><circle cx="300" cy="395" r="108"/></clipPath><clipPath id="m-eye1"><circle cx="700" cy="395" r="108"/></clipPath>
+  </defs>
+  <g>
+    <ellipse cx="500" cy="618" rx="392" ry="252" fill="#fff"/>
+    <circle cx="300" cy="395" r="158" fill="#fff"/><circle cx="700" cy="395" r="158" fill="#fff"/>
+    
+    <g clip-path="url(#m-eye0)">
+      <rect x="180" y="373" width="240" height="140" fill="#000"/>
+      <circle cx="250" cy="425" r="50" fill="#fff"/>
+      <rect x="180" y="373" width="240" height="14" fill="#fff"/>
+    </g>
+    <g clip-path="url(#m-eye1)">
+      <rect x="580" y="373" width="240" height="140" fill="#000"/>
+      <circle cx="650" cy="425" r="50" fill="#fff"/>
+      <rect x="580" y="373" width="240" height="14" fill="#fff"/>
+    </g>
+    <path d="M236 650 C 400 702 620 696 766 612" fill="none" stroke="#000" stroke-width="30" stroke-linecap="round"/>
+    <circle cx="452" cy="548" r="13" fill="#000"/>
+    <circle cx="548" cy="548" r="13" fill="#000"/>
+  </g></mask>
+    <rect width="1000" height="1000" fill="#F2F7E9" mask="url(#mono)"/></svg>

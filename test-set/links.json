@@ -1,0 +1,70 @@
+[
+  {
+    "id": "fake-nitro",
+    "label": "scam",
+    "message": "Free Discord Nitro for 3 months, Discord is giving it away to active members! Claim before it expires: https://dlscord-gift.com/nitro"
+  },
+  {
+    "id": "mrbeast-crypto",
+    "label": "scam",
+    "message": "@everyone MrBeast is giving away $5,000 in USDT to celebrate 400M subs. First 100 people only: https://mrbeast-promo.io/claim"
+  },
+  {
+    "id": "steam-phish",
+    "label": "scam",
+    "message": "bro I accidentally reported you on steam, you need to verify here or your account gets banned https://steamcommunlty.com/verify"
+  },
+  {
+    "id": "signals-group",
+    "label": "scam",
+    "message": "Join my crypto signals group, 10x guaranteed returns every week, already made my members $200k https://t.me/moonshot_signals_vip"
+  },
+  {
+    "id": "nsfw-invite",
+    "label": "nsfw",
+    "message": "best 18+ server, free leaks every day 🔞 discord.gg/hotleaks",
+    "invite": {
+      "name": "Hot Leaks 🔞",
+      "description": "NSFW content, leaks and onlyfans drops",
+      "nsfwLevel": "explicit",
+      "memberCount": 48211
+    }
+  },
+  {
+    "id": "random-promo-invite",
+    "label": "spam",
+    "message": "JOIN NOW!!! biggest giveaway server, nitro + robux every hour discord.gg/giveawayzone",
+    "invite": {
+      "name": "Giveaway Zone",
+      "description": "Free nitro and robux giveaways every hour, invite 5 friends to enter",
+      "nsfwLevel": "default",
+      "memberCount": 3120
+    }
+  },
+  {
+    "id": "youtube-tutorial",
+    "label": "ok",
+    "message": "this tutorial explains slash commands really well https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  },
+  {
+    "id": "github-repo",
+    "label": "ok",
+    "message": "here's the repo if anyone wants to contribute https://github.com/discordjs/discord.js"
+  },
+  {
+    "id": "minecraft-invite",
+    "label": "ok",
+    "message": "we're running a build contest this weekend in our partner server if anyone's interested discord.gg/mcbuilders",
+    "invite": {
+      "name": "Minecraft Builders Hub",
+      "description": "A friendly community for Minecraft builders. Weekly build contests and showcases.",
+      "nsfwLevel": "default",
+      "memberCount": 15402
+    }
+  },
+  {
+    "id": "news-article",
+    "label": "ok",
+    "message": "bitcoin dropped again lol https://www.reuters.com/technology/bitcoin-falls-below-key-level-2026-10-07/"
+  }
+]
