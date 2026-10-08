@@ -1,29 +1,32 @@
-// Croak: starts the Discord client and wires the events to the moderator and the /croak command.
+// Croak: starts the Discord client and wires its events to the moderator, the /croak command and
+// the buttons.
 //
 //   npm start
 //
 // Needs DISCORD_TOKEN and OPENAI_API_KEY in .env. Set DEV_GUILD_ID to a test server's ID to
 // register /croak there instantly instead of globally.
 
-import { Client, Events, GatewayIntentBits, GuildNSFWLevel, MessageFlags, Options } from 'discord.js';
+import './env.js';
+import { Client, Events, GatewayIntentBits, GuildNSFWLevel, MessageFlags, Options, PermissionFlagsBits, PermissionsBitField } from 'discord.js';
 import { decide } from './ai/decisions.js';
 import { MODERATION_QUESTIONS } from './ai/questions.js';
+import { createAutomodSync } from './automod.js';
 import { createCommands, croakCommand } from './commands.js';
 import { config } from './config.js';
 import { openDb } from './db.js';
+import { createInteractions } from './interactions.js';
+import { startJobs, welcome } from './jobs.js';
 import { createJudge } from './judge.js';
 import { createModerator } from './moderate.js';
 import { createRepeatTracker } from './repeats.js';
+import { createRaidDetector, createRecentMessages } from './trackers.js';
 
-// View Channels, Send Messages, Embed Links, Read Message History, Manage Messages, Moderate Members
-const PERMISSIONS = '1099511720960';
+const P = PermissionFlagsBits;
+// What Croak needs to do its job, and the extras that unlock optional features
+const CORE_PERMISSIONS = [P.ViewChannel, P.SendMessages, P.EmbedLinks, P.ReadMessageHistory, P.ManageMessages, P.ModerateMembers, P.ManageWebhooks];
+const FULL_PERMISSIONS = [...CORE_PERMISSIONS, P.ManageGuild, P.ManageChannels, P.ManageRoles, P.KickMembers, P.BanMembers];
 const INVITE_CACHE_MS = 10 * 60 * 1000;
 
-try {
-  process.loadEnvFile();
-} catch {
-  // no .env file; rely on the real environment
-}
 for (const name of ['DISCORD_TOKEN', 'OPENAI_API_KEY']) {
   if (!process.env[name]) {
     console.error(`${name} is missing. Add it to the .env file in this folder.`);
@@ -73,9 +76,17 @@ function resolveInvite(code) {
 const db = openDb();
 const judge = createJudge({ db, resolveInvite });
 const repeats = createRepeatTracker(config.repeat);
-const moderator = createModerator({ db, judge, repeats, log });
-const commands = createCommands({ db, judge, resolveInvite });
-setInterval(() => repeats.sweep(), 60_000).unref();
+const recent = createRecentMessages();
+const raids = createRaidDetector(config.raid);
+const automod = createAutomodSync({ client, db, log });
+const moderator = createModerator({ db, judge, repeats, recent, raids, automod, log });
+const commands = createCommands({ db, judge, resolveInvite, automod });
+const interactions = createInteractions({ client, db, automod, log });
+const stopJobs = startJobs({ db, log });
+setInterval(() => {
+  repeats.sweep();
+  recent.sweep();
+}, 60_000).unref();
 
 client.once(Events.ClientReady, async (c) => {
   // One tiny AI call now, so the first real message doesn't wait for the connection to open.
@@ -84,8 +95,11 @@ client.once(Events.ClientReady, async (c) => {
     .then(() => log('OpenAI Decisions API reachable'))
     .catch((err) => log('OpenAI Decisions API check failed:', err.message));
 
+  const invite = (perms) =>
+    `https://discord.com/oauth2/authorize?client_id=${c.application.id}&scope=bot+applications.commands&permissions=${PermissionsBitField.resolve(perms)}`;
   log(`Logged in as ${c.user.tag}, in ${c.guilds.cache.size} server(s): ${c.guilds.cache.map((g) => `${g.name} (${g.id})`).join(', ')}`);
-  log(`Invite link: https://discord.com/oauth2/authorize?client_id=${c.application.id}&scope=bot+applications.commands&permissions=${PERMISSIONS}`);
+  log(`Invite link: ${invite(CORE_PERMISSIONS)}`);
+  log(`Invite link with every optional feature: ${invite(FULL_PERMISSIONS)}`);
   try {
     const devGuild = process.env.DEV_GUILD_ID && c.guilds.cache.get(process.env.DEV_GUILD_ID);
     if (devGuild) {
@@ -106,16 +120,25 @@ client.on(Events.MessageCreate, (message) => {
   moderator.handleMessage(message).catch((err) => log('Error handling message:', err));
 });
 
-// Scammers sometimes post something harmless, then edit the link in
 client.on(Events.MessageUpdate, (before, after) => {
-  if (after.partial || before.content === after.content) return; // link previews loading also fire this
-  moderator.handleMessage(after).catch((err) => log('Error handling edit:', err));
+  if (after.partial) return;
+  // Scammers sometimes post something harmless, then edit the link in
+  if (before.partial || before.content !== after.content) {
+    moderator.handleMessage(after).catch((err) => log('Error handling edit:', err));
+    return;
+  }
+  // Link previews load a moment after the message: check their images when they arrive
+  if ((after.embeds?.length ?? 0) > (before.embeds?.length ?? 0)) {
+    moderator.handleMessage(after, { embedsOnly: true }).catch((err) => log('Error checking link previews:', err));
+  }
 });
 
 client.on(Events.InteractionCreate, (interaction) => {
   const run = async () => {
     if (interaction.isChatInputCommand() && interaction.commandName === 'croak') return commands.handle(interaction);
-    if (interaction.isButton() && interaction.customId.startsWith('croak:')) return moderator.handleButton(interaction);
+    if ((interaction.isButton() || interaction.isModalSubmit()) && interaction.customId.startsWith('croak:')) {
+      return interactions.handle(interaction);
+    }
   };
   run().catch((err) => {
     log('Error handling interaction:', err);
@@ -124,12 +147,30 @@ client.on(Events.InteractionCreate, (interaction) => {
   });
 });
 
+client.on(Events.GuildCreate, (guild) => {
+  log(`Joined ${guild.name} (${guild.id})`);
+  welcome(guild, log);
+});
+
+// Only fires when Croak is removed (an outage fires GuildUnavailable instead): forget the server
+client.on(Events.GuildDelete, (guild) => {
+  log(`Removed from ${guild.name ?? guild.id}; deleting its data`);
+  try {
+    db.forgetGuild(guild.id);
+  } catch (err) {
+    log('Could not delete server data:', err.message);
+  }
+});
+
 client.on(Events.Error, (err) => log('Discord client error:', err));
 process.on('unhandledRejection', (err) => log('Unhandled rejection:', err));
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, async () => {
     log(`${signal} received, shutting down`);
+    stopJobs();
+    automod.stop();
+    await automod.flush().catch(() => {});
     await client.destroy();
     db.close();
     process.exit(0);

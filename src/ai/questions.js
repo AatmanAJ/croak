@@ -39,13 +39,15 @@ const MAX_MESSAGE_CHARS = 1000;
  * @param {string} [msg.link] the link being judged
  * @param {string} [msg.expandedFrom] the short link that redirected to `link`
  * @param {object} [msg.invite] details of the server a discord.gg invite points to
+ * @param {string[]} [msg.notes] facts found by Croak's own checks, e.g. a look-alike domain
  */
-export function describeMessage({ message, link, expandedFrom, invite }) {
+export function describeMessage({ message, link, expandedFrom, invite, notes = [] }) {
   const lines = ['A member posted this message in a Discord server.', '', `Message: ${truncate(message)}`];
   if (link) {
     lines.push('', `The link being checked: ${link}`);
     if (expandedFrom) lines.push(`It was posted as the short link ${expandedFrom}, which redirects there.`);
   }
+  for (const note of notes) lines.push(`Note: ${note}.`);
   if (invite) {
     lines.push('', 'The Discord invite in the message points to this server:');
     lines.push(`- Name: ${invite.name}`);
@@ -57,10 +59,14 @@ export function describeMessage({ message, link, expandedFrom, invite }) {
 }
 
 /** The text that goes alongside an image. */
-export function describeImage(message) {
-  return message
-    ? `A member posted this image in a Discord server, with this message: ${truncate(message)}`
-    : 'A member posted this image in a Discord server.';
+export function describeImage(message, { qr } = {}) {
+  const lines = [
+    message
+      ? `A member posted this image in a Discord server, with this message: ${truncate(message)}`
+      : 'A member posted this image in a Discord server.',
+  ];
+  if (qr) lines.push(`The image contains a QR code that opens: ${qr.slice(0, 300)}`);
+  return lines.join('\n');
 }
 
 function truncate(text) {

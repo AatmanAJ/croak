@@ -34,7 +34,27 @@ export const config = {
 
   // Two images whose perceptual hashes differ by at most this many bits (of 64) count as the same
   nearDuplicateBits: 6,
+
+  // Spending guard rails. At ~650 tokens a check, 20,000 AI calls is about $1.30.
+  ai: {
+    dailyLimitTotal: Number(process.env.AI_DAILY_LIMIT ?? 20_000),
+    dailyLimitPerServer: Number(process.env.AI_DAILY_LIMIT_PER_SERVER ?? 3_000),
+    failuresBeforePause: 5,
+    pauseMs: 60_000,
+  },
+
+  // When this many servers' mods block the same thing, it's blocked for everyone
+  networkBlockServers: 3,
+
+  // A burst of croaks against new members means a raid
+  raid: { croaks: 4, windowMs: 2 * 60_000, lockMs: 10 * 60_000 },
+
+  // Privacy: message text kept on cases (for reposting approved messages) is wiped after this
+  caseContentDays: 30,
 };
+
+// Images are only downloaded from Discord's own CDN and media proxy, never from arbitrary sites
+export const IMAGE_HOSTS = ['cdn.discordapp.com', 'media.discordapp.net', 'discordapp.net'];
 
 // Whole-domain approvals are only for hand-picked sites like these; everything else is judged per link.
 // No image hosts here: an approved domain would wave through any image posted from it.
