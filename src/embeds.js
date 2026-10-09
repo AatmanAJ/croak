@@ -6,6 +6,8 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'disc
 import { formatMinutes } from './punish.js';
 import { ESCALATIONS, PRESETS } from './settings.js';
 
+export const SITE_URL = 'https://croakbot.base44.app';
+
 export const COLORS = {
   croaked: 0xff5c8a,
   review: 0xffb547,
@@ -155,6 +157,8 @@ export function welcomeEmbed() {
         "2. In Server Settings → Roles, drag Croak's role **above** your members' roles, so it can time out spammers.",
         '',
         'Then `/croak status` checks everything is working, and `/croak help` lists every setting.',
+        '',
+        `Docs: ${SITE_URL}/docs`,
       ].join('\n'),
     );
 }
@@ -247,6 +251,8 @@ export function helpEmbed() {
         cmd('lists', "This server's allow and block entries."),
         '',
         'Age-restricted channels skip the NSFW check automatically. Mods, admins and the owner are never checked.',
+        '',
+        `Full docs: ${SITE_URL}/docs`,
       ].join('\n'),
     );
 }
