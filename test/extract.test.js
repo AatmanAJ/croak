@@ -72,3 +72,20 @@ test('normalizeUrl turns lookalike unicode domains into punycode the AI can spot
   assert.match(host, /^xn--/);
   assert.notEqual(host, 'discord.com');
 });
+
+test('domains typed without https:// are checked, including defanged ones', () => {
+  const keys = (content) => extractItems({ content }).links.map((l) => l.key);
+  assert.deepEqual(keys('inappropiratecontent.com'), ['inappropiratecontent.com']);
+  assert.deepEqual(keys('free nitro: dlscord-gift.com/nitro claim fast'), ['dlscord-gift.com/nitro']);
+  assert.deepEqual(keys('WWW.FREE-ROBUX.GG/claim!'), ['free-robux.gg/claim']);
+  assert.deepEqual(keys('visit beeg[.]com or beeg(dot)com'), ['beeg.com']);
+  assert.deepEqual(keys('https://a.example.com/x and a.example.com/x'), ['a.example.com/x']);
+});
+
+test('emails, file names, versions and abbreviations are not links', () => {
+  const keys = (content) => extractItems({ content }).links.map((l) => l.key);
+  assert.deepEqual(keys('email me at bob@gmail.com'), []);
+  assert.deepEqual(keys('run script.py then open notes.md, node.js is great'), []);
+  assert.deepEqual(keys('version v1.2.3, 3.14, e.g. i.e. Mr.Beast'), []);
+  assert.deepEqual(keys('join discord.gg/abc123'), []); // an invite, handled separately
+});

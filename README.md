@@ -58,7 +58,7 @@ Each message from someone who isn't a mod goes through these steps:
    - Every copy is deleted and the author is punished.
    - Its links are blocked in that server for a day.
    - No AI call is made.
-3. **Collect** links, invites and images. This includes:
+3. **Collect** links (with or without `https://`, including defanged ones like `site[.]com`), invites and images. This includes:
    - forwarded messages
    - link-preview images, fetched through Discord's proxy only
    - edited messages
