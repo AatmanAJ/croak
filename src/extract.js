@@ -43,7 +43,7 @@ export function extractItems({ content = '', attachments = [] }) {
   const images = attachments
     .filter((a) => IMAGE_TYPE.test(a.contentType ?? '') && a.size <= config.imageMaxBytes)
     .slice(0, config.imagesPerMessage)
-    .map((a) => ({ kind: 'image', url: a.url, name: a.name, size: a.size }));
+    .map((a) => ({ kind: 'image', url: a.url, proxyURL: a.proxyURL, width: a.width, height: a.height, name: a.name, size: a.size }));
 
   return { links, invites, images };
 }

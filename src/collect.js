@@ -16,7 +16,7 @@ export function collectMessage(message) {
   const content = [message.content, ...snapshots.map((s) => s.content)].filter(Boolean).join('\n');
   const attachments = [message.attachments, ...snapshots.map((s) => s.attachments)]
     .flatMap((c) => (c ? [...c.values()] : []))
-    .map((a) => ({ url: a.url, name: a.name, contentType: a.contentType, size: a.size }));
+    .map((a) => ({ url: a.url, proxyURL: a.proxyURL, width: a.width, height: a.height, name: a.name, contentType: a.contentType, size: a.size }));
   const embeds = [message.embeds ?? [], ...snapshots.map((s) => s.embeds ?? [])].flat();
   return { content, attachments, embedImages: embedImages(embeds), forwarded: snapshots.length > 0 };
 }
@@ -38,7 +38,7 @@ export function embedImages(embeds) {
       const url = asset?.proxy_url ?? asset?.proxyURL ?? asset?.url;
       if (!url || seen.has(url)) continue;
       seen.add(url);
-      out.push({ kind: 'image', url, name: `link preview${host ? ` from ${host}` : ''}`, size: 0 });
+      out.push({ kind: 'image', url, width: asset.width, height: asset.height, name: `link preview${host ? ` from ${host}` : ''}`, size: 0 });
     }
   }
   return out.slice(0, config.imagesPerMessage);

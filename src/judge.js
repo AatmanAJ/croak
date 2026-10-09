@@ -9,6 +9,7 @@ import { describeImage, describeMessage, MODERATION_QUESTIONS } from './ai/quest
 import { config, hostMatches, IMAGE_HOSTS, isAdultHost, TRUSTED_DOMAINS } from './config.js';
 import { dHash } from './hash.js';
 import { toDataUrl } from './images.js';
+import { extractItems } from './extract.js';
 import { expandShortLink, normalizeUrl } from './links.js';
 import { checkDomain } from './lookalike.js';
 import { isDiscordLoginLink, readQr } from './qr.js';
@@ -77,7 +78,7 @@ export function createAiGuard({ db, limits = config.ai, now = Date.now }) {
  * @param {(code: string) => Promise<object|null>} deps.resolveInvite server details for an invite, null if invalid
  * @param {Function} [deps.decide] Decisions API call (swappable for tests)
  * @param {Function} [deps.moderate] moderation API call for images
- * @param {Function} [deps.fetchImage] downloads an image to a Buffer
+ * @param {Function} [deps.fetchImage] downloads an image item to a Buffer
  * @param {Function} [deps.expand] follows short-link redirects
  * @param {ReturnType<typeof createAiGuard>} [deps.guard]
  */
@@ -190,10 +191,11 @@ export function createJudge({
     });
   }
 
-  async function judgeImage(item, { guildId, text }) {
-    const buffer = await fetchImage(item.url);
+  async function judgeImage(item, ctx) {
+    const { guildId, text } = ctx;
+    const buffer = await fetchImage(item);
     const hash = await dHash(buffer);
-    const where = { cacheKind: 'image', cacheKey: hash };
+    const where = { cacheKind: 'image', cacheKey: hash, kb: Math.round(buffer.length / 1024) };
 
     const hit = fromCache(db.getVerdict(guildId, 'image', hash));
     if (hit) return { ...hit, ...where };
@@ -201,20 +203,31 @@ export function createJudge({
     if (nearBlock) return { ...fromCache(nearBlock), note: 'near copy of a blocked image', ...where };
 
     return once(`image:${hash}`, async () => {
-      // QR "verify" codes that open Discord's login page steal accounts: no AI needed
-      const qr = await readQr(buffer);
+      // The image is already small, so reading the QR code first costs ~40ms. That keeps the
+      // Discord-login shortcut free of AI calls and lets the AI see where a QR code points.
+      const [qr, dataUrl] = await Promise.all([readQr(buffer), toDataUrl(buffer)]);
       if (isDiscordLoginLink(qr)) {
         const scores = { scam: 1, nsfw: null, spam: null };
         db.putVerdict({ kind: 'image', key: hash, verdict: 'block', scores, source: 'rule', ttlMs: config.ttl.block });
         return { verdict: 'block', scores, source: 'rule', note: 'QR code opens a Discord login page', ...where };
       }
 
-      const dataUrl = await toDataUrl(buffer);
+      // A QR code that opens a link: run the link through the link checks while the AI looks at the image
+      const qrLink = qr ? extractItems({ content: qr }).links[0] : null;
+      const qrCheck = qrLink ? judgeLink(qrLink, ctx).catch(() => null) : null;
+
       const { scores, aiMs } = await ask(imageInput(describeImage(text, { qr }), dataUrl), guildId);
       if (scores.nsfw == null) {
         // Decisions refused the NSFW question: fall back to the free moderation endpoint
         const mod = await moderate(dataUrl, undefined, { timeoutMs: config.aiTimeoutMs });
         scores.nsfw = Math.max(mod.category_scores?.sexual ?? 0, mod.category_scores?.['sexual/minors'] ?? 0);
+      }
+
+      const linked = await qrCheck;
+      if (linked?.verdict === 'block') {
+        const merged = maxScores(scores, linked.scores ?? { scam: 1 });
+        db.putVerdict({ kind: 'image', key: hash, verdict: 'block', scores: merged, source: 'rule', ttlMs: config.ttl.block });
+        return { verdict: 'block', scores: merged, source: 'rule', aiMs, note: `QR code opens ${qrLink.host}, which is blocked`, ...where };
       }
       const note = qr ? `contains a QR code (${qr.slice(0, 80)})` : undefined;
       return { ...remember('image', hash, scores, config.ttl.allowImage), aiMs, note, ...where };
@@ -269,6 +282,15 @@ export function createJudge({
   return { judgeAll, judgeLink, judgeInvite, judgeImage };
 }
 
+/** Highest score per question across two sets of scores (null means not asked or refused). */
+function maxScores(a, b) {
+  const out = { ...a };
+  for (const [name, p] of Object.entries(b)) {
+    if (p != null) out[name] = Math.max(out[name] ?? 0, p);
+  }
+  return out;
+}
+
 /** The server's verdict: stored scores re-read at its sensitivity, and look-alike domains always seen by a mod. */
 function applyPolicy(result, policy) {
   let verdict = result.verdict;
@@ -296,7 +318,40 @@ function reasonOf(item, result, policy) {
   return category ? `${LABELS[category]} ${noun}` : noun;
 }
 
-async function downloadImage(url) {
+/**
+ * A smaller copy of a Discord-hosted image, resized by Discord's media proxy (longest side
+ * maxSide), or null if the image is already small or isn't on the proxy. A 6 MB phone photo
+ * comes back as ~100 KB, which is faster to download, fingerprint, read and send to the AI.
+ */
+export function resizedUrl({ url, proxyURL, width, height }, maxSide = 1024) {
+  if (!width || !height || Math.max(width, height) <= maxSide) return null;
+  let u;
+  try {
+    u = new URL(proxyURL ?? url);
+  } catch {
+    return null;
+  }
+  if (!hostMatches(u.hostname, ['discordapp.net'])) return null; // only the media proxy resizes
+  const scale = maxSide / Math.max(width, height);
+  u.searchParams.set('width', String(Math.round(width * scale)));
+  u.searchParams.set('height', String(Math.round(height * scale)));
+  return u.href;
+}
+
+/** The image to check: the small copy if Discord can make one, otherwise the original. */
+async function downloadImage(item) {
+  const small = resizedUrl(item);
+  if (small) {
+    try {
+      return await fetchBuffer(small);
+    } catch {
+      // fall back to the original below
+    }
+  }
+  return fetchBuffer(item.url);
+}
+
+async function fetchBuffer(url) {
   const { hostname } = new URL(url);
   if (!hostMatches(hostname, IMAGE_HOSTS)) throw new Error(`not downloading images from ${hostname}`);
   const res = await fetch(url, { signal: AbortSignal.timeout(3000) });

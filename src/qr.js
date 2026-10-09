@@ -4,7 +4,7 @@
 import jsQR from 'jsqr';
 import sharp from 'sharp';
 
-const MAX_SIDE = 1000;
+const MAX_SIDE = 800; // big enough for any QR code worth reading, small enough to decode in ~40ms
 // Discord's remote-auth (QR login) links
 const DISCORD_LOGIN = /^https?:\/\/(?:www\.|ptb\.|canary\.)?discord(?:app)?\.com\/ra\//i;
 

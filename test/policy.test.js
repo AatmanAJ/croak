@@ -140,3 +140,26 @@ test("a server's own allow beats the adult-site rule", async () => {
   const [r] = await judge.judgeAll([link('https://onlyfans.com/someone')], { guildId: 'g', text: '' });
   assert.equal(r.verdict, 'allow');
 });
+
+test('big Discord images are fetched as a smaller copy from the media proxy', async () => {
+  const { resizedUrl } = await import('../src/judge.js');
+  const proxy = 'https://media.discordapp.net/attachments/1/2/photo.png?ex=abc&is=def&hm=123';
+  const url = new URL(resizedUrl({ url: 'https://cdn.discordapp.com/attachments/1/2/photo.png', proxyURL: proxy, width: 3024, height: 4032 }));
+  assert.equal(url.hostname, 'media.discordapp.net');
+  assert.equal(url.searchParams.get('hm'), '123'); // Discord's signature is kept
+  assert.equal(url.searchParams.get('width'), '768');
+  assert.equal(url.searchParams.get('height'), '1024');
+  assert.equal(resizedUrl({ url: proxy, proxyURL: proxy, width: 800, height: 600 }), null); // already small
+  assert.equal(resizedUrl({ url: 'https://cdn.discordapp.com/x.png', width: 4000, height: 3000 }), null); // not the proxy
+});
+
+test('a QR code that opens a blocked site gets the image croaked', async () => {
+  const image = await QRCode.toBuffer('https://dlscord-gift.com/nitro', { width: 300 });
+  const db = openDb(':memory:');
+  db.putVerdict({ kind: 'link', key: 'dlscord-gift.com/nitro', verdict: 'block', scores: { scam: 0.99, nsfw: 0, spam: 0.5 }, source: 'ai' });
+  const { judge } = judgeWith({ decide: fakeDecide({ scam: 0.2, nsfw: 0, spam: 0.1 }), image, db });
+  const [r] = await judge.judgeAll([{ kind: 'image', url: 'https://cdn.discordapp.com/qr.png', name: 'claim.png' }], { guildId: 'g', text: '' });
+  assert.equal(r.verdict, 'block');
+  assert.match(r.note, /dlscord-gift\.com/);
+  assert.equal(db.getVerdict('g', 'image', r.cacheKey).verdict, 'block'); // remembered for next time
+});

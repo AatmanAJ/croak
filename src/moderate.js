@@ -124,7 +124,7 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
 
     log(
       `${message.guild.name} #${message.channel.name} ${member.user.tag}: ${action} ` +
-        `[${results.map((r) => `${r.item.kind} ${r.verdict}/${r.source} ${r.ms}ms${r.aiMs !== undefined ? ` (AI ${r.aiMs}ms)` : ''}`).join(', ')}]`,
+        `[${results.map((r) => `${r.item.kind} ${r.verdict}/${r.source} ${r.ms}ms${r.aiMs !== undefined ? ` (AI ${r.aiMs}ms)` : ''}${r.kb ? ` ${r.kb}KB` : ''}`).join(', ')}]`,
     );
     for (const r of results) automod?.consider(message.guildId, r);
     if (action !== 'allow') await act(message, { action, results, settings, signals, isNew });
