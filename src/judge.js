@@ -6,7 +6,7 @@
 import { decide as askDecisions, imageInput } from './ai/decisions.js';
 import { moderateImage } from './ai/moderation.js';
 import { describeImage, describeMessage, MODERATION_QUESTIONS } from './ai/questions.js';
-import { config, hostMatches, IMAGE_HOSTS, TRUSTED_DOMAINS } from './config.js';
+import { config, hostMatches, IMAGE_HOSTS, isAdultHost, TRUSTED_DOMAINS } from './config.js';
 import { dHash } from './hash.js';
 import { toDataUrl } from './images.js';
 import { expandShortLink, normalizeUrl } from './links.js';
@@ -135,9 +135,13 @@ export function createJudge({
       fromCache(db.getVerdict(guildId, 'domain', host)) ?? fromCache(db.getVerdict(guildId, 'link', key));
     const where = { cacheKind: 'link', cacheKey: item.key, host: item.host };
 
+    // Known adult sites need no AI. Scored as NSFW so age-restricted channels still allow them.
+    const adult = (host, note) => ({ verdict: 'block', scores: { scam: null, nsfw: 1, spam: null }, source: 'rule', note, ...where });
+
     if (hostMatches(item.host, TRUSTED_DOMAINS)) return { verdict: 'allow', source: 'trusted', ...where };
     const hit = cached(item.host, item.key);
     if (hit) return { ...hit, hint: checkDomain(item.host), ...where };
+    if (isAdultHost(item.host)) return adult(item.host, 'known adult site');
 
     return once(`link:${item.key}`, async () => {
       const finalHref = await expand(item.href);
@@ -146,6 +150,7 @@ export function createJudge({
       const hint = checkDomain(final.host);
       if (expanded) {
         if (hostMatches(final.host, TRUSTED_DOMAINS)) return { verdict: 'allow', source: 'trusted', note: `redirects to ${final.host}`, ...where };
+        if (isAdultHost(final.host)) return adult(final.host, `redirects to the adult site ${final.host}`);
         const finalHit = cached(final.host, final.key);
         if (finalHit) return { ...finalHit, hint, note: `redirects to ${final.host}`, ...where };
       }

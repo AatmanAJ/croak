@@ -8,8 +8,9 @@ export const config = {
   deleteAt: 0.9,
   reviewAt: 0.6,
 
-  // Give up on the AI after this long and fall back (see decideAction in moderate.js)
-  aiTimeoutMs: 2000,
+  // Give up on the AI after this long and fall back (see decideAction in moderate.js). Generous on
+  // purpose: the API is usually ~0.2s but has slow moments, and a late delete beats no delete.
+  aiTimeoutMs: 8000,
 
   // Who counts as "new": their posts are held when the bot isn't sure
   newAccountDays: 7,
@@ -74,6 +75,21 @@ export const TRUSTED_DOMAINS = [
   'store.steampowered.com',
   'steamcommunity.com',
 ];
+
+// Well-known adult sites, croaked as NSFW without asking the AI (still allowed in age-restricted
+// channels, and a server can /croak allow one). Whole adult top-level domains are covered too.
+export const ADULT_DOMAINS = [
+  'pornhub.com', 'xvideos.com', 'xnxx.com', 'xhamster.com', 'beeg.com', 'redtube.com', 'youporn.com',
+  'spankbang.com', 'tube8.com', 'eporner.com', 'txxx.com', 'hqporner.com', 'porn.com', 'brazzers.com',
+  'motherless.com', 'chaturbate.com', 'stripchat.com', 'bongacams.com', 'cam4.com', 'livejasmin.com',
+  'onlyfans.com', 'fansly.com', 'manyvids.com', 'rule34.xxx', 'e-hentai.org', 'nhentai.net', 'hanime.tv',
+];
+export const ADULT_TLDS = ['xxx', 'porn', 'sex', 'adult'];
+
+/** True for a well-known adult site or an adult-only top-level domain. */
+export function isAdultHost(host) {
+  return hostMatches(host, ADULT_DOMAINS) || ADULT_TLDS.includes(host.split('.').pop());
+}
 
 // GIF pickers. Skipped by host, never by a .gif extension (a scam image can be a .gif).
 export const GIF_HOSTS = ['tenor.com', 'giphy.com'];

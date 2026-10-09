@@ -67,6 +67,7 @@ Each message from someone who isn't a mod goes through these steps:
    - **Trusted sites:** allowed straight away.
    - **The server's own decisions,** then shared verdicts.
    - **Invites:** judged by the server they lead to. Servers Discord rates 18+ are croaked straight away.
+   - **Well-known adult sites** and the `.xxx`/`.porn`/`.sex`/`.adult` endings are croaked as NSFW without the AI.
    - **Images:**
      - Fingerprinted (dHash), so near copies of blocked images are caught.
      - QR codes are read, and a Discord login QR is croaked straight away.

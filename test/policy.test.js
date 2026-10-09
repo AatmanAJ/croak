@@ -119,3 +119,24 @@ test('images are only downloaded from Discord', async () => {
   assert.equal(r.verdict, 'unknown');
   assert.match(r.note, /not downloading/);
 });
+
+test('well-known adult sites are croaked without the AI, but allowed in age-restricted channels', async () => {
+  const decide = fakeDecide({ scam: 0, nsfw: 0, spam: 0 });
+  const { judge } = judgeWith({ decide });
+  const item = link('check out ma nudes @ https://beeg.com/');
+  const [normal] = await judge.judgeAll([item], { guildId: 'g', text: '', policy: policyFor(withDefaults()) });
+  const [adultChannel] = await judge.judgeAll([item], { guildId: 'g', text: '', policy: policyFor(withDefaults(), { nsfwChannel: true }) });
+  const [tld] = await judge.judgeAll([link('https://anything.xxx/page')], { guildId: 'g', text: '' });
+  assert.equal(normal.verdict, 'block');
+  assert.equal(normal.reason, 'NSFW link');
+  assert.equal(adultChannel.verdict, 'allow');
+  assert.equal(tld.verdict, 'block');
+  assert.equal(decide.calls, 0);
+});
+
+test("a server's own allow beats the adult-site rule", async () => {
+  const { judge, db } = judgeWith({ decide: fakeDecide({ scam: 0, nsfw: 0, spam: 0 }) });
+  db.putVerdict({ guildId: 'g', kind: 'domain', key: 'onlyfans.com', verdict: 'allow', source: 'mod' });
+  const [r] = await judge.judgeAll([link('https://onlyfans.com/someone')], { guildId: 'g', text: '' });
+  assert.equal(r.verdict, 'allow');
+});
