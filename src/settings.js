@@ -28,6 +28,9 @@ export const DEFAULT_SETTINGS = Object.freeze({
   quarantineRoleId: null, // if set, this role is given instead of a timeout
   alertRoleId: null, // pinged when a raid is detected
   dmMembers: true,
+  dmNote: null, // the server's own line added to the DM, e.g. "Questions? Ask in #support"
+  digest: 'off', // 'weekly' posts a summary in the mod log
+  lastDigestAt: null,
   automod: { enabled: false, ruleId: null },
 });
 

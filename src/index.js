@@ -1,5 +1,5 @@
-// Croak: starts the Discord client and wires its events to the moderator, the /croak command and
-// the buttons.
+// Croak: starts the Discord client and wires its events to the moderator, the /croak command, the
+// right-click tools and the buttons.
 //
 //   npm start
 //
@@ -12,13 +12,17 @@ import { decide } from './ai/decisions.js';
 import { MODERATION_QUESTIONS } from './ai/questions.js';
 import { createAutomodSync } from './automod.js';
 import { createCommands, croakCommand } from './commands.js';
+import { startDigests } from './digest.js';
 import { config } from './config.js';
 import { openDb } from './db.js';
 import { createInteractions } from './interactions.js';
 import { startJobs, welcome } from './jobs.js';
 import { createJudge } from './judge.js';
+import { createLockdown } from './lockdown.js';
 import { createModerator } from './moderate.js';
+import { contextCommands } from './reports.js';
 import { createRepeatTracker } from './repeats.js';
+import { createToolkit } from './toolkit.js';
 import { createRaidDetector, createRecentMessages } from './trackers.js';
 
 const P = PermissionFlagsBits;
@@ -80,9 +84,13 @@ const recent = createRecentMessages();
 const raids = createRaidDetector(config.raid);
 const automod = createAutomodSync({ client, db, log });
 const moderator = createModerator({ db, judge, repeats, recent, raids, automod, log });
-const commands = createCommands({ db, judge, resolveInvite, automod });
-const interactions = createInteractions({ client, db, automod, log });
+const kit = createToolkit({ client, db, automod, log });
+const lockdown = createLockdown({ client, db, kit, log });
+const interactions = createInteractions({ client, db, automod, kit, judge, moderator, recent, raids, lockdown, log });
+const commands = createCommands({ db, judge, resolveInvite, automod, lockdown, interactions });
 const stopJobs = startJobs({ db, log });
+const stopDigests = startDigests({ client, db, kit, log });
+const ALL_COMMANDS = [croakCommand, ...contextCommands];
 setInterval(() => {
   repeats.sweep();
   recent.sweep();
@@ -100,19 +108,20 @@ client.once(Events.ClientReady, async (c) => {
   log(`Logged in as ${c.user.tag}, in ${c.guilds.cache.size} server(s): ${c.guilds.cache.map((g) => `${g.name} (${g.id})`).join(', ')}`);
   log(`Invite link: ${invite(CORE_PERMISSIONS)}`);
   log(`Invite link with every optional feature: ${invite(FULL_PERMISSIONS)}`);
+  lockdown.resume();
   try {
     const devGuild = process.env.DEV_GUILD_ID && c.guilds.cache.get(process.env.DEV_GUILD_ID);
     if (devGuild) {
       // Server commands show up instantly. Clear the global copy so /croak isn't listed twice.
-      await devGuild.commands.set([croakCommand]);
+      await devGuild.commands.set(ALL_COMMANDS);
       await c.application.commands.set([]);
-      log(`Registered /croak in ${devGuild.name} (dev mode)`);
+      log(`Registered /croak and ${contextCommands.length} right-click tools in ${devGuild.name} (dev mode)`);
     } else {
-      await c.application.commands.set([croakCommand]);
-      log('Registered /croak globally');
+      await c.application.commands.set(ALL_COMMANDS);
+      log(`Registered /croak and ${contextCommands.length} right-click tools globally`);
     }
   } catch (err) {
-    log('Could not register /croak:', err.message);
+    log('Could not register commands:', err.message);
   }
 });
 
@@ -136,7 +145,8 @@ client.on(Events.MessageUpdate, (before, after) => {
 client.on(Events.InteractionCreate, (interaction) => {
   const run = async () => {
     if (interaction.isChatInputCommand() && interaction.commandName === 'croak') return commands.handle(interaction);
-    if ((interaction.isButton() || interaction.isModalSubmit()) && interaction.customId.startsWith('croak:')) {
+    if (interaction.isContextMenuCommand()) return interactions.contextCommand(interaction);
+    if ((interaction.isButton() || interaction.isModalSubmit() || interaction.isAnySelectMenu()) && interaction.customId.startsWith('croak:')) {
       return interactions.handle(interaction);
     }
   };
@@ -169,6 +179,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, async () => {
     log(`${signal} received, shutting down`);
     stopJobs();
+    stopDigests();
     automod.stop();
     await automod.flush().catch(() => {});
     await client.destroy();

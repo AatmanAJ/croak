@@ -3,135 +3,9 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Collection } from 'discord.js';
-import { createInteractions } from '../src/interactions.js';
-import { openDb } from '../src/db.js';
-import { createJudge } from '../src/judge.js';
-import { createModerator } from '../src/moderate.js';
 import { stepFor } from '../src/punish.js';
-import { createRepeatTracker } from '../src/repeats.js';
-import { createRaidDetector, createRecentMessages } from '../src/trackers.js';
 import { keywordFor, mergeKeywords, shouldMirror } from '../src/automod.js';
-
-const DAY = 24 * 60 * 60 * 1000;
-const allow = { has: () => true };
-const deny = { has: () => false };
-
-/** A fake server with a #general, a #mod-log, a bot member, and recorders for every side effect. */
-function fakeServer({ scores = { scam: 0.99, nsfw: 0, spam: 0.4 }, settings = {} } = {}) {
-  const log = { deleted: [], timeouts: [], dms: [], posted: [], kicked: [], banned: [], webhookPosts: [] };
-  const db = openDb(':memory:');
-  db.updateSettings('g', { logChannelId: 'log', ...settings });
-
-  const channel = (id, name) => ({
-    id,
-    name,
-    nsfw: false,
-    parentId: null,
-    isThread: () => false,
-    toString: () => `<#${id}>`,
-    permissionsFor: () => allow,
-    messages: {
-      delete: async (mid) => log.deleted.push(mid),
-      fetch: async () => {
-        throw new Error('Unknown Message');
-      },
-    },
-    bulkDelete: async (ids) => {
-      log.deleted.push(...ids);
-      return new Map(ids.map((i) => [i, {}]));
-    },
-    fetchWebhooks: async () => new Collection(),
-    createWebhook: async () => ({ send: async (m) => log.webhookPosts.push(m) }),
-    send: async (m) => {
-      log.posted.push(m);
-      return { id: `logmsg${log.posted.length}` };
-    },
-  });
-  const general = channel('c1', 'general');
-  const random = channel('c2', 'random');
-  const modLog = channel('log', 'mod-log');
-  const me = { id: 'bot', permissions: allow, roles: { highest: { position: 10 } } };
-  const guild = {
-    id: 'g',
-    name: 'Test Server',
-    ownerId: 'owner',
-    members: { me, fetch: async (id) => members.get(id) },
-    channels: { cache: new Map([['c1', general], ['c2', random], ['log', modLog]]) },
-    roles: { cache: new Map() },
-  };
-  const members = new Map();
-
-  function member(id, { newAccount = false, mod = false, roles = [] } = {}) {
-    const m = {
-      id,
-      guild,
-      user: { id, tag: `${id}#0001`, createdTimestamp: Date.now() - (newAccount ? 1 : 400) * DAY },
-      joinedTimestamp: Date.now() - (newAccount ? 1000 : 300 * DAY),
-      permissions: mod ? allow : deny,
-      roles: { cache: new Map(roles.map((r) => [r, {}])) },
-      moderatable: true,
-      kickable: true,
-      bannable: true,
-      isCommunicationDisabled: () => log.timeouts.length > 0,
-      displayName: id,
-      displayAvatarURL: () => 'https://cdn.discordapp.com/avatar.png',
-      timeout: async (ms) => log.timeouts.push(ms),
-      kick: async () => log.kicked.push(id),
-      ban: async () => log.banned.push(id),
-    };
-    members.set(id, m);
-    return m;
-  }
-
-  let n = 0;
-  function message(author, content, { channelId = 'c1', everyonePing = false } = {}) {
-    n += 1;
-    const id = `m${n}`;
-    return {
-      id,
-      inGuild: () => true,
-      author: {
-        id: author.id,
-        bot: false,
-        tag: author.user.tag,
-        createdTimestamp: author.user.createdTimestamp,
-        toString: () => `<@${author.id}>`,
-        send: async (m) => log.dms.push(m),
-      },
-      member: author,
-      guild,
-      guildId: 'g',
-      channel: guild.channels.cache.get(channelId),
-      channelId,
-      content,
-      attachments: new Map(),
-      embeds: [],
-      messageSnapshots: new Map(),
-      mentions: { everyone: false },
-      delete: async () => log.deleted.push(id),
-      ...(everyonePing && {}),
-    };
-  }
-
-  const decide = async () => ({
-    answers: Object.fromEntries(Object.entries(scores).map(([name, probability]) => [name, { type: 'predicate', name, probability }])),
-  });
-  const judge = createJudge({ db, decide, expand: async (h) => h, resolveInvite: async () => null });
-  const raids = createRaidDetector({ croaks: 3, windowMs: 60_000, lockMs: 60_000 });
-  const moderator = createModerator({
-    db,
-    judge,
-    repeats: createRepeatTracker({ channels: 3, windowMs: 60_000 }),
-    recent: createRecentMessages(),
-    raids,
-    automod: null,
-    log: () => {},
-  });
-  const client = { guilds: { cache: new Map([['g', guild]]) }, users: { fetch: async () => ({ send: async (m) => log.dms.push(m) }) } };
-  const interactions = createInteractions({ client, db, automod: null, log: () => {} });
-  return { db, guild, member, message, moderator, interactions, log, raids };
-}
+import { allow, DAY, fakeServer } from './fake-server.js';
 
 test('a scam link from a new member: deleted, timed out, DM with an appeal button, case in the log', async () => {
   const s = fakeServer();
@@ -172,8 +46,9 @@ test('borderline from an established member is flagged and left up; from a new m
   assert.equal(s.log.posted[0].embeds[0].data.title, 'Flagged for review: possible scam link');
   assert.deepEqual(
     s.log.posted[0].components[0].components.map((c) => c.data.label),
-    ['Approve', 'Block'],
+    ['Approve', 'Block', 'Jump to message'], // the message is still up, so mods can jump to it
   );
+  assert.equal(s.log.posted[0].components[1].components[0].data.custom_id, 'croak:more:1'); // the "More actions" menu
 
   const newbie = s.member('newbie', { newAccount: true });
   const held = s.message(newbie, 'check this https://maybe.example/b');
@@ -197,19 +72,7 @@ test('a hold approved by a mod is reposted under the member’s name, without pi
   const s = fakeServer({ scores: { scam: 0.7, nsfw: 0, spam: 0 } });
   const newbie = s.member('newbie', { newAccount: true });
   await s.moderator.handleMessage(s.message(newbie, 'my project @everyone https://myproject.example'));
-  const replies = [];
-  const interaction = {
-    customId: 'croak:approve:1',
-    inGuild: () => true,
-    guildId: 'g',
-    memberPermissions: allow,
-    user: { id: 'mod', tag: 'mod#0001', toString: () => '<@mod>' },
-    message: { embeds: [s.log.posted[0].embeds[0].toJSON()] },
-    deferUpdate: async () => {},
-    editReply: async (m) => replies.push(m),
-    reply: async (m) => replies.push(m),
-  };
-  await s.interactions.handle(interaction);
+  const { replies } = await s.press('croak:approve:1');
 
   assert.equal(s.log.webhookPosts.length, 1);
   assert.equal(s.log.webhookPosts[0].username, 'newbie');
@@ -219,8 +82,8 @@ test('a hold approved by a mod is reposted under the member’s name, without pi
   assert.match(replies[0].embeds[0].data.fields.at(-1).value, /Reposted/);
 
   // A second mod pressing the button gets told it's done
-  await s.interactions.handle({ ...interaction, reply: async (m) => replies.push(m) });
-  assert.match(replies.at(-1).content, /already handled/);
+  const second = await s.press('croak:approve:1');
+  assert.match(second.replies.at(-1).content, /already handled/);
 });
 
 test('three croaks against new members within a minute raise a raid alert', async () => {

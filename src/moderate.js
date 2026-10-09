@@ -5,9 +5,10 @@
 import { PermissionFlagsBits } from 'discord.js';
 import { collectMessage, isNsfwChannel, triedEveryonePing } from './collect.js';
 import { config } from './config.js';
-import { caseButtons, caseEmbed, memberNotice, raidEmbed } from './embeds.js';
+import { caseButtons, caseEmbed, memberNotice, raidButtons, raidEmbed } from './embeds.js';
 import { extractItems } from './extract.js';
 import { worse } from './judge.js';
+import { saveModDecision } from './overrides.js';
 import { cleanUp, punish } from './punish.js';
 import { fingerprint } from './repeats.js';
 import { policyFor } from './settings.js';
@@ -25,10 +26,11 @@ const MAX_ITEMS = 10;
  * flag:   borderline from an established member, so leave it up and tell the mods
  * allow:  nothing to do
  */
-export function decideAction(results, { isNew, everyone = false, raid = false }) {
+export function decideAction(results, { isNew, everyone = false, raid = false, watched = false }) {
   const worst = results.reduce((w, r) => worse(w, r.verdict), 'allow');
   if (worst === 'block') return 'delete';
-  if (worst === 'review') return everyone ? 'delete' : isNew ? 'hold' : 'flag';
+  if (worst === 'review') return everyone ? 'delete' : isNew || watched ? 'hold' : 'flag';
+  if (watched) return 'hold'; // a mod asked to see everything this member posts
   if (isNew && (raid || everyone || worst === 'unknown')) return 'hold';
   return 'allow';
 }
@@ -48,6 +50,17 @@ export function headline(results) {
 export function isExempt({ channelId, parentId, roleIds }, settings) {
   if (settings.exemptChannels.includes(channelId) || (parentId && settings.exemptChannels.includes(parentId))) return true;
   return roleIds.some((id) => settings.exemptRoles.includes(id));
+}
+
+/** What the case buttons need to know about a message: where it is, and what's in it. */
+export function caseContext(message, results) {
+  return {
+    guildId: message.guildId,
+    channelId: message.channelId,
+    messageId: message.id,
+    hasLinks: results.some((r) => r.item?.kind === 'link' && r.verdict !== 'allow'),
+    hasContent: Boolean(message.content),
+  };
 }
 
 /** What a case remembers about each checked item, enough for a mod's decision to be cached. */
@@ -93,6 +106,8 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
     const settings = db.getSettings(message.guildId);
     const where = { channelId: message.channelId, parentId: message.channel?.parentId, roleIds: [...member.roles.cache.keys()] };
     if (isExempt(where, settings)) return;
+    const flags = db.memberFlags(message.guildId, member.id);
+    if (flags.trusted) return; // a mod said this member is never checked
 
     const collected = collectMessage(message);
     const ids = { guildId: message.guildId, userId: member.id, channelId: message.channelId, messageId: message.id };
@@ -114,9 +129,11 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
     const policy = policyFor(settings, { nsfwChannel: isNsfwChannel(message.channel) });
 
     const results = await judge.judgeAll(items, { guildId: message.guildId, text: collected.content, policy });
-    const action = decideAction(results, { isNew, everyone, raid });
+    const watched = Boolean(flags.watching);
+    const action = decideAction(results, { isNew, everyone, raid, watched });
 
     const signals = [];
+    if (watched) signals.push(`on the watchlist until <t:${Math.floor(flags.watching / 1000)}:R>`);
     if (everyone) signals.push('tried to ping @everyone without permission');
     if (collected.forwarded) signals.push('forwarded message');
     if (raid && isNew) signals.push('posted during a raid');
@@ -127,16 +144,19 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
         `[${results.map((r) => `${r.item.kind} ${r.verdict}/${r.source} ${r.ms}ms${r.aiMs !== undefined ? ` (AI ${r.aiMs}ms)` : ''}${r.kb ? ` ${r.kb}KB` : ''}`).join(', ')}]`,
     );
     for (const r of results) automod?.consider(message.guildId, r);
-    if (action !== 'allow') await act(message, { action, results, settings, signals, isNew });
+    // Nothing looked wrong; it's held only because a mod is watching this member
+    const watchOnly = watched && results.every((r) => r.verdict === 'allow');
+    if (action !== 'allow') await act(message, { action, results, settings, signals, isNew, watchOnly });
   }
 
-  async function act(message, { action, results, settings, signals, isNew }) {
+  async function act(message, { action, results, settings, signals, isNew, watchOnly = false }) {
     const guild = message.guild;
     const logChannel = settings.logChannelId ? guild.channels.cache.get(settings.logChannelId) : null;
     // Holding or flagging only makes sense if a mod will see it
     if (action !== 'delete' && !logChannel) return;
 
     const top = headline(results);
+    const reason = watchOnly ? 'watched member' : top.reason;
     const notes = [];
     const me = guild.members.me;
 
@@ -155,7 +175,7 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
       messageId: message.id,
       authorId: message.author.id,
       action,
-      reason: top.reason,
+      reason,
       content: message.content || null,
       ms: Math.max(0, ...results.map((r) => r.ms ?? 0)),
       items: results.map(caseItem),
@@ -164,9 +184,13 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
     if (action === 'delete') {
       notes.push(...(await afterCroak(message, { settings, reason: top.reason, caseId })));
     }
-    if (isNew && action !== 'flag' && raids.record(guild.id)) await announceRaid(guild, settings, logChannel);
+    if (isNew && action !== 'flag' && raids.record(guild.id, message.author.id)) await announceRaid(guild, settings, logChannel);
 
-    await postCase(logChannel, caseId, { embeds: [caseEmbed({ caseId, action, reason: top.reason, message, results, notes, signals })], action });
+    await postCase(logChannel, caseId, {
+      embeds: [caseEmbed({ caseId, action, reason, message, results, notes, signals, title: watchOnly ? 'Held for review: watched member' : null })],
+      action,
+      ctx: caseContext(message, results),
+    });
   }
 
   /** Timeout/escalation, cleanup of their other recent posts, and the DM. Returns notes for the log. */
@@ -190,16 +214,16 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
 
     if (settings.dmMembers) {
       await message.author
-        .send(memberNotice({ guildName: guild.name, channelName: message.channel.name, reason, caseId }))
+        .send(memberNotice({ guildName: guild.name, channelName: message.channel.name, reason, caseId, note: settings.dmNote }))
         .catch(() => {}); // DMs closed
     }
     return notes;
   }
 
-  async function postCase(logChannel, caseId, { embeds, action }) {
+  async function postCase(logChannel, caseId, { embeds, action, ctx = {} }) {
     if (!logChannel) return;
     try {
-      const posted = await logChannel.send({ embeds, components: caseButtons(caseId, action) });
+      const posted = await logChannel.send({ embeds, components: caseButtons(caseId, action, ctx) });
       db.setCaseLog(caseId, posted.id);
     } catch (err) {
       log(`Could not post case #${caseId}: ${err.message}`);
@@ -213,6 +237,7 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
       .send({
         content: settings.alertRoleId ? `<@&${settings.alertRoleId}>` : undefined,
         embeds: [raidEmbed({ count: config.raid.croaks, minutes: Math.round(config.raid.lockMs / 60_000) })],
+        components: raidButtons(),
         allowedMentions: { roles: settings.alertRoleId ? [settings.alertRoleId] : [] },
       })
       .catch(() => {});
@@ -254,12 +279,71 @@ export function createModerator({ db, judge, repeats, recent, raids, automod, lo
       items: results.map(caseItem),
     });
     const notes = [`Deleted ${copies.length} copies.`, ...(await afterCroak(message, { settings, reason, caseId, alsoDeleted: copies.map((c) => c.messageId) }))];
-    if (isNewMember(message.member) && raids.record(message.guildId)) {
+    if (isNewMember(message.member) && raids.record(message.guildId, message.author.id)) {
       await announceRaid(message.guild, settings, settings.logChannelId ? message.guild.channels.cache.get(settings.logChannelId) : null);
     }
     const logChannel = settings.logChannelId ? message.guild.channels.cache.get(settings.logChannelId) : null;
-    await postCase(logChannel, caseId, { embeds: [caseEmbed({ caseId, action: 'delete', reason, message, results, notes })], action: 'delete' });
+    await postCase(logChannel, caseId, {
+      embeds: [caseEmbed({ caseId, action: 'delete', reason, message, results, notes })],
+      action: 'delete',
+      ctx: caseContext(message, []),
+    });
   }
 
-  return { handleMessage };
+  /**
+   * A mod croaks a message by hand (right-click → Apps → Croak this message): delete it, block
+   * what's in it for this server, apply the usual timeout/cleanup/DM, and post a case.
+   * Returns a short summary for the mod.
+   */
+  async function croakManually(message, { by, reason = '' }) {
+    const guild = message.guild;
+    const member = message.member ?? (await guild.members.fetch(message.author.id).catch(() => null));
+    if (member && (member.id === guild.ownerId || member.permissions.has(PermissionFlagsBits.ManageMessages))) {
+      return "Croak doesn't act on the owner or other mods.";
+    }
+    const settings = db.getSettings(guild.id);
+    const collected = collectMessage(message);
+    const { links, invites, images } = extractItems(collected);
+    const items = [...invites, ...links, ...images, ...collected.embedImages].slice(0, MAX_ITEMS);
+    // Judged only to learn each item's cache key; the mod has already decided the verdict
+    const judged = items.length ? await judge.judgeAll(items, { guildId: guild.id, text: collected.content }) : [];
+    const results = judged.map((r) => ({ ...r, verdict: 'block', reason: r.reason }));
+    const why = `croaked by ${by.tag}${reason ? `: ${reason}` : ''}`;
+
+    const notes = [];
+    if (message.channel.permissionsFor(guild.members.me)?.has(PermissionFlagsBits.ManageMessages)) {
+      await message.delete().catch((err) => notes.push(`Delete failed: ${err.message}.`));
+    } else {
+      notes.push('Could not delete it: Croak needs Manage Messages in that channel.');
+    }
+    const caseId = db.addCase({
+      guildId: guild.id,
+      channelId: message.channelId,
+      messageId: message.id,
+      authorId: message.author.id,
+      action: 'delete',
+      reason: why,
+      content: message.content || null,
+      ms: 0,
+      items: results.map(caseItem),
+    });
+    for (const r of results.filter((r) => r.cacheKind && r.cacheKey)) {
+      if (saveModDecision(db, { guildId: guild.id, kind: r.cacheKind, key: r.cacheKey, verdict: 'block', scores: r.scores ?? null })) {
+        notes.push(`\`${r.label.slice(0, 60)}\` is now blocked across every Croak server.`);
+      }
+      if (r.item.kind === 'link' && r.item.host) automod?.addHost(guild.id, r.item.host);
+    }
+    db.addCaseEvent(caseId, { actorId: by.id, kind: 'action', text: why });
+    if (member) notes.push(...(await afterCroak(Object.assign(message, { member }), { settings, reason: 'message removed by a mod', caseId })));
+
+    const logChannel = settings.logChannelId ? guild.channels.cache.get(settings.logChannelId) : null;
+    await postCase(logChannel, caseId, {
+      embeds: [caseEmbed({ caseId, action: 'delete', reason: why, message, results, notes })],
+      action: 'delete',
+      ctx: caseContext(message, results),
+    });
+    return [`Croaked. Case #${caseId}.`, ...notes].filter(Boolean).join(' ');
+  }
+
+  return { handleMessage, croakManually };
 }

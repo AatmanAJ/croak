@@ -40,12 +40,37 @@ Everything needs **Manage Messages**. Commands that change settings also need **
 | `/croak exempt-channel` / `exempt-role` | Skips a channel (and its threads) or a role. |
 | `/croak actions …` | Sets the timeout length, cleanup window, escalation, quarantine role, raid alert role and member DMs. |
 | `/croak automod enabled` | Mirrors confident scam domains into a Discord AutoMod rule. |
+| `/croak settings` | Every main setting on one screen: mod-log channel, sensitivity, timeout, escalation, category and DM toggles. |
+| `/croak member user` | A member's cases, strikes, watch and trust status, with buttons to watch, trust, delete their last 30 minutes, time out or ban. |
+| `/croak case number` | One case: what Croak saw, the outcome, its history, and a link to the log entry. |
+| `/croak lockdown action [minutes] [slowmode_seconds]` | Slowmode on every text channel and invites paused, for a set time. Ending it puts each channel back exactly as it was, even after a restart. |
+| `/croak message [note] [clear]` | Adds the mods' own line to the DM members get when a message is removed. |
+| `/croak digest schedule` | A weekly summary in the mod log. |
+| `/croak test` | Posts a sample case in the mod log. |
 | `/croak help` | Lists every command. |
 
-Buttons on mod-log cases:
-- A croaked message gets **Not spam**.
-- A held or flagged message gets **Approve** and **Block**.
-- An appeal gets **Accept** and **Keep removed**.
+### Right-click tools (Apps menu)
+
+| Tool | Who | What it does |
+|---|---|---|
+| **Report to mods** (message) | Everyone | Sends the message to the mod log with a reason, as a case with **Croak it** and **Dismiss**. One report a minute per person. |
+| **Croak this message** (message) | Mods | Deletes it, punishes like a normal croak, blocks its links and images in this server, and opens a case. |
+| **Check with Croak** (message) | Mods | Shows the scores for every link, invite and image in it, without acting. |
+| **Croak: member** (user) | Mods | Opens the member panel. |
+
+### Cases in the mod log
+
+- A croaked message gets **Not spam** (which reposts it under their name, pings off).
+- A held or flagged message gets **Approve** and **Block**; a flagged one also gets **Jump to message**.
+- Every case has a **More actions** menu: message the member, add a note, their history, repost, block the whole site, watch for 7 days, time out, remove timeout, kick, ban. Each action is added to the case's **History**.
+
+### Appeals
+
+The DM a member gets has a **This was a mistake** button. Their appeal is posted under the case with **Accept**, **Keep it removed** and **Reply…**. Replying sends your message to the member as a DM with a **Reply to the mods** button, so it becomes a conversation (up to 6 messages each way per case). Every message is posted in the mod log.
+
+### Watch and trust
+
+A **watched** member (7 days) has every link and image held for review, even ones that look fine. A **trusted** member is never checked. Both are set from the member panel or a case's menu.
 
 Whatever a mod decides is remembered for that server.
 
@@ -109,7 +134,10 @@ The numbers live in [src/config.js](src/config.js) and [src/settings.js](src/set
 | `src/moderate.js` | The message pipeline and actions |
 | `src/judge.js` | Per-item checks, cache, AI, spending guard |
 | `src/collect.js`, `src/extract.js`, `src/links.js`, `src/lookalike.js`, `src/qr.js`, `src/hash.js` | Detection |
-| `src/punish.js`, `src/interactions.js`, `src/automod.js`, `src/overrides.js` | Actions, buttons, AutoMod, mod decisions |
+| `src/punish.js`, `src/automod.js`, `src/overrides.js` | Punishment, AutoMod, mod decisions |
+| `src/interactions.js` | Routes every button, menu, form and right-click to the files below |
+| `src/case-actions.js`, `src/appeals.js`, `src/member-panel.js`, `src/reports.js` | Case buttons and menu, appeal conversations, the member panel, right-click tools |
+| `src/settings-panel.js`, `src/lockdown.js`, `src/digest.js`, `src/toolkit.js` | /croak settings, lockdown, the weekly digest, shared helpers |
 | `src/commands.js`, `src/embeds.js` | The /croak command and every message Croak posts |
 | `src/db.js`, `src/settings.js`, `src/config.js` | Storage, per-server settings, tunables |
 | `src/jobs.js`, `src/trackers.js`, `src/repeats.js` | Housekeeping, welcome, in-memory trackers |

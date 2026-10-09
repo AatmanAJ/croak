@@ -60,6 +60,32 @@ const MIGRATIONS = [
      ai_ms      INTEGER NOT NULL DEFAULT 0,
      PRIMARY KEY (guild_id, day)
    );`,
+
+  // 3: mod tools: case conversations and notes, watched and trusted members, lockdowns
+  `CREATE TABLE IF NOT EXISTS case_events (
+     id       INTEGER PRIMARY KEY AUTOINCREMENT,
+     case_id  INTEGER NOT NULL,
+     at       INTEGER NOT NULL,
+     actor_id TEXT,
+     kind     TEXT NOT NULL,                -- note | mod_reply | member_reply | action | report
+     text     TEXT                          -- wiped after 30 days with case content
+   );
+   CREATE INDEX IF NOT EXISTS case_events_by_case ON case_events (case_id);
+   CREATE TABLE IF NOT EXISTS members (
+     guild_id    TEXT NOT NULL,
+     user_id     TEXT NOT NULL,
+     watch_until INTEGER,                   -- while in the future, their links and images are held
+     watch_by    TEXT,
+     trusted     INTEGER NOT NULL DEFAULT 0, -- never checked
+     PRIMARY KEY (guild_id, user_id)
+   );
+   CREATE TABLE IF NOT EXISTS lockdowns (
+     guild_id   TEXT PRIMARY KEY,
+     started_at INTEGER NOT NULL,
+     ends_at    INTEGER,
+     by         TEXT,
+     state      TEXT NOT NULL               -- JSON: previous slowmodes, whether invites were paused
+   );`,
 ];
 
 export function openDb(path = process.env.DB_PATH ?? 'data/croak.db') {
@@ -130,6 +156,24 @@ export function openDb(path = process.env.DB_PATH ?? 'data/croak.db') {
     aiCallsToday: db.prepare('SELECT COALESCE(SUM(ai_calls), 0) AS n FROM daily_stats WHERE day = ?'),
     guildAiCallsToday: db.prepare('SELECT COALESCE(ai_calls, 0) AS n FROM daily_stats WHERE guild_id = ? AND day = ?'),
 
+    addEvent: db.prepare('INSERT INTO case_events (case_id, at, actor_id, kind, text) VALUES (?, ?, ?, ?, ?)'),
+    events: db.prepare('SELECT * FROM case_events WHERE case_id = ? ORDER BY id'),
+    countEvents: db.prepare('SELECT COUNT(*) AS n FROM case_events WHERE case_id = ? AND kind = ?'),
+    casesFor: db.prepare('SELECT * FROM cases WHERE guild_id = ? AND author_id = ? ORDER BY id DESC LIMIT ?'),
+    getMember: db.prepare('SELECT * FROM members WHERE guild_id = ? AND user_id = ?'),
+    setWatch: db.prepare(`
+      INSERT INTO members (guild_id, user_id, watch_until, watch_by) VALUES (?, ?, ?, ?)
+      ON CONFLICT (guild_id, user_id) DO UPDATE SET watch_until = excluded.watch_until, watch_by = excluded.watch_by`),
+    setTrusted: db.prepare(`
+      INSERT INTO members (guild_id, user_id, trusted) VALUES (?, ?, ?)
+      ON CONFLICT (guild_id, user_id) DO UPDATE SET trusted = excluded.trusted`),
+    getLockdown: db.prepare('SELECT * FROM lockdowns WHERE guild_id = ?'),
+    putLockdown: db.prepare(`
+      INSERT INTO lockdowns (guild_id, started_at, ends_at, by, state) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (guild_id) DO UPDATE SET ends_at = excluded.ends_at, by = excluded.by, state = excluded.state`),
+    deleteLockdown: db.prepare('DELETE FROM lockdowns WHERE guild_id = ?'),
+    allLockdowns: db.prepare('SELECT * FROM lockdowns'),
+    wipeOldEvents: db.prepare('UPDATE case_events SET text = NULL WHERE text IS NOT NULL AND at < ?'),
     wipeOldContent: db.prepare('UPDATE cases SET content = NULL WHERE content IS NOT NULL AND created_at < ?'),
     deleteOldStats: db.prepare('DELETE FROM daily_stats WHERE day < ?'),
     deleteExpired: db.prepare('DELETE FROM verdicts WHERE expires_at IS NOT NULL AND expires_at < ?'),
@@ -240,6 +284,64 @@ export function openDb(path = process.env.DB_PATH ?? 'data/croak.db') {
       return { counts, reasons: q.caseReasons.all(guildId, since).map((r) => ({ ...r })), topSites };
     },
 
+    /** Recent cases against one member in a server, newest first. */
+    casesFor(guildId, userId, limit = 10) {
+      return q.casesFor.all(guildId, userId, limit).map(parseCase);
+    },
+
+    // --- case conversations and notes --------------------------------------------
+
+    addCaseEvent(caseId, { actorId = null, kind, text = null, now = Date.now() }) {
+      q.addEvent.run(caseId, now, actorId, kind, text);
+    },
+
+    caseEvents(caseId) {
+      return q.events.all(caseId).map((e) => ({ ...e }));
+    },
+
+    countCaseEvents(caseId, kind) {
+      return q.countEvents.get(caseId, kind).n;
+    },
+
+    // --- watched and trusted members ----------------------------------------------
+
+    /** { watching: until-timestamp or null, trusted: boolean } for a member. */
+    memberFlags(guildId, userId, now = Date.now()) {
+      const row = q.getMember.get(guildId, userId);
+      return {
+        watching: row?.watch_until && row.watch_until > now ? row.watch_until : null,
+        watchBy: row?.watch_by ?? null,
+        trusted: Boolean(row?.trusted),
+      };
+    },
+
+    setWatch(guildId, userId, until, by = null) {
+      q.setWatch.run(guildId, userId, until, by);
+    },
+
+    setTrusted(guildId, userId, trusted) {
+      q.setTrusted.run(guildId, userId, trusted ? 1 : 0);
+    },
+
+    // --- lockdowns -------------------------------------------------------------------
+
+    getLockdown(guildId) {
+      const row = q.getLockdown.get(guildId);
+      return row && { ...row, state: JSON.parse(row.state) };
+    },
+
+    putLockdown(guildId, { startedAt = Date.now(), endsAt = null, by = null, state }) {
+      q.putLockdown.run(guildId, startedAt, endsAt, by, JSON.stringify(state));
+    },
+
+    clearLockdown(guildId) {
+      q.deleteLockdown.run(guildId);
+    },
+
+    allLockdowns() {
+      return q.allLockdowns.all().map((row) => ({ ...row, state: JSON.parse(row.state) }));
+    },
+
     // --- usage stats -------------------------------------------------------------
 
     bumpStats(guildId, { checks = 0, cacheHits = 0, aiCalls = 0, aiMs = 0 }, now = Date.now()) {
@@ -262,6 +364,7 @@ export function openDb(path = process.env.DB_PATH ?? 'data/croak.db') {
 
     /** Privacy: drop message text from old cases, old stats, and expired verdicts. */
     housekeeping({ contentDays = 30, statsDays = 90, now = Date.now() } = {}) {
+      q.wipeOldEvents.run(now - contentDays * DAY);
       return {
         wiped: q.wipeOldContent.run(now - contentDays * DAY).changes,
         stats: q.deleteOldStats.run(dayOf(now - statsDays * DAY)).changes,
@@ -274,6 +377,9 @@ export function openDb(path = process.env.DB_PATH ?? 'data/croak.db') {
       db.exec('BEGIN');
       try {
         for (const sql of [
+          'DELETE FROM case_events WHERE case_id IN (SELECT id FROM cases WHERE guild_id = ?)',
+          'DELETE FROM members WHERE guild_id = ?',
+          'DELETE FROM lockdowns WHERE guild_id = ?',
           'DELETE FROM guilds WHERE guild_id = ?',
           'DELETE FROM cases WHERE guild_id = ?',
           'DELETE FROM daily_stats WHERE guild_id = ?',

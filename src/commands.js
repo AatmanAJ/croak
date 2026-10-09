@@ -2,7 +2,8 @@
 
 import { ChannelType, InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { config } from './config.js';
-import { checkEmbed, helpEmbed, statsEmbed, statusEmbed } from './embeds.js';
+import { caseEmbed, caseSummaryView, checkEmbed, helpEmbed, statsEmbed, statusEmbed } from './embeds.js';
+import { memberPanel } from './member-panel.js';
 import { extractItems } from './extract.js';
 import { normalizeUrl } from './links.js';
 import { clearModDecision, saveModDecision } from './overrides.js';
@@ -127,11 +128,46 @@ export const croakCommand = new SlashCommandBuilder()
       .setDescription("Mirror confirmed scam sites into Discord's AutoMod, so they're blocked before anyone is pinged")
       .addBooleanOption((o) => o.setName('enabled').setDescription('On or off').setRequired(true)),
   )
+  .addSubcommand((s) => s.setName('settings').setDescription('Every main setting on one screen'))
+  .addSubcommand((s) =>
+    s
+      .setName('member')
+      .setDescription("A member's cases and strikes, with watch, trust, purge, timeout and ban buttons")
+      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)),
+  )
+  .addSubcommand((s) =>
+    s
+      .setName('case')
+      .setDescription('Look up a case by number')
+      .addIntegerOption((o) => o.setName('number').setDescription('The case number, e.g. 142').setRequired(true).setMinValue(1)),
+  )
+  .addSubcommand((s) =>
+    s
+      .setName('lockdown')
+      .setDescription('Slowmode every channel and pause invites, for a set time (raids)')
+      .addStringOption((o) => o.setName('action').setDescription('Start or end').setRequired(true).addChoices({ name: 'Start', value: 'on' }, { name: 'End', value: 'off' }))
+      .addIntegerOption((o) => o.setName('minutes').setDescription('How long (default 30)').setMinValue(5).setMaxValue(1440))
+      .addIntegerOption((o) => o.setName('slowmode_seconds').setDescription('Slowmode per channel (default 30)').setMinValue(5).setMaxValue(21_600)),
+  )
+  .addSubcommand((s) =>
+    s
+      .setName('message')
+      .setDescription('Add your own line to the DM members get when Croak removes their message')
+      .addStringOption((o) => o.setName('note').setDescription('e.g. "Questions? Ask in #support"').setMaxLength(300))
+      .addBooleanOption((o) => o.setName('clear').setDescription('Remove your note')),
+  )
+  .addSubcommand((s) =>
+    s
+      .setName('digest')
+      .setDescription('A weekly summary of what Croak did, posted in your mod log')
+      .addStringOption((o) => o.setName('schedule').setDescription('Weekly or off').setRequired(true).addChoices({ name: 'Weekly', value: 'weekly' }, { name: 'Off', value: 'off' })),
+  )
+  .addSubcommand((s) => s.setName('test').setDescription('Post a sample case in the mod log, to see what one looks like'))
   .addSubcommand((s) => s.setName('help').setDescription('Every Croak command'));
 
-const SETTINGS_COMMANDS = new Set(['setup', 'sensitivity', 'category', 'exempt-channel', 'exempt-role', 'actions', 'automod']);
+const SETTINGS_COMMANDS = new Set(['setup', 'sensitivity', 'category', 'exempt-channel', 'exempt-role', 'actions', 'automod', 'lockdown', 'message', 'digest']);
 
-export function createCommands({ db, judge, resolveInvite, automod }) {
+export function createCommands({ db, judge, resolveInvite, automod, lockdown, interactions }) {
   const reply = (interaction, content) => interaction.reply({ content, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
 
   async function setup(interaction) {
@@ -355,6 +391,69 @@ export function createCommands({ db, judge, resolveInvite, automod }) {
     return interaction.editReply(message);
   }
 
+  async function member(interaction) {
+    const user = interaction.options.getUser('user', true);
+    return interaction.reply({ ...(await memberPanel({ db, guild: interaction.guild, userId: user.id })), flags: MessageFlags.Ephemeral });
+  }
+
+  async function caseLookup(interaction) {
+    const found = db.getCase(interaction.options.getInteger('number', true));
+    if (!found || found.guild_id !== interaction.guildId) return reply(interaction, "There's no case with that number in this server.");
+    return interaction.reply({ ...caseSummaryView(found, db.caseEvents(found.id), db.getSettings(interaction.guildId).logChannelId), flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+  }
+
+  async function lockdownCmd(interaction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    if (interaction.options.getString('action', true) === 'off') return interaction.editReply(await lockdown.end(interaction.guild, interaction.user));
+    const { summary } = await lockdown.start(interaction.guild, {
+      minutes: interaction.options.getInteger('minutes') ?? 30,
+      slowmode: interaction.options.getInteger('slowmode_seconds') ?? 30,
+      by: interaction.user,
+    });
+    return interaction.editReply(summary);
+  }
+
+  async function dmNote(interaction) {
+    const note = interaction.options.getString('note');
+    if (interaction.options.getBoolean('clear')) {
+      db.updateSettings(interaction.guildId, { dmNote: null });
+      return reply(interaction, 'Removed your note from the DM.');
+    }
+    if (!note) {
+      const current = db.getSettings(interaction.guildId).dmNote;
+      return reply(interaction, current ? `Your note: “${current}”\nChange it with \`/croak message note:…\`, or remove it with \`clear:true\`.` : 'No note yet. Add one with `/croak message note:…`');
+    }
+    db.updateSettings(interaction.guildId, { dmNote: note.trim() });
+    return reply(interaction, `Done. Members whose message is removed will also see:\n> **From the ${interaction.guild.name} mods:** ${note.trim()}`);
+  }
+
+  async function digest(interaction) {
+    const schedule = interaction.options.getString('schedule', true);
+    db.updateSettings(interaction.guildId, { digest: schedule, lastDigestAt: schedule === 'weekly' ? Date.now() : null });
+    return reply(interaction, schedule === 'weekly' ? 'Weekly digest on. The first one arrives in your mod log in 7 days.' : 'Weekly digest off.');
+  }
+
+  async function test(interaction) {
+    const settings = db.getSettings(interaction.guildId);
+    const channel = settings.logChannelId ? interaction.guild.channels.cache.get(settings.logChannelId) : null;
+    if (!channel) return reply(interaction, 'Pick a mod-log channel first: `/croak setup` or `/croak settings`.');
+    const sample = {
+      author: interaction.user,
+      channel: interaction.channel,
+      content: 'Free Nitro for 3 months, claim fast https://dlscord-gift.com/nitro',
+    };
+    const results = [
+      { item: { kind: 'link' }, label: 'https://dlscord-gift.com/nitro', reason: 'scam link', verdict: 'block', scores: { scam: 0.99, nsfw: 0, spam: 0.91 }, source: 'ai', hint: { note: 'the domain dlscord-gift.com looks like a misspelling of discord' }, ms: 190 },
+    ];
+    const embed = caseEmbed({ caseId: 0, action: 'delete', reason: 'scam link', message: sample, results, notes: ['(Test: nothing was deleted and nobody was timed out.)'] }).setTitle('Test case: this is what a croak looks like');
+    try {
+      await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
+      return reply(interaction, `Posted a sample case in ${channel}. Real ones come with buttons: Not spam, and a More actions menu.`);
+    } catch (err) {
+      return reply(interaction, `Croak couldn't post in ${channel}: ${err.message}`);
+    }
+  }
+
   const handlers = {
     setup,
     status,
@@ -370,6 +469,13 @@ export function createCommands({ db, judge, resolveInvite, automod }) {
     'exempt-role': (i) => exempt(i, 'role'),
     actions,
     automod: automodToggle,
+    settings: (i) => interactions.openSettings(i),
+    member,
+    case: caseLookup,
+    lockdown: lockdownCmd,
+    message: dmNote,
+    digest,
+    test,
     help: (i) => i.reply({ embeds: [helpEmbed()], flags: MessageFlags.Ephemeral }),
   };
 

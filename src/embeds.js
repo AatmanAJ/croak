@@ -2,7 +2,7 @@
 // with the frog flavour limited to the word "croaked". Links are shown in code formatting so mods
 // can read a scam without it being clickable.
 
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, messageLink, StringSelectMenuBuilder } from 'discord.js';
 import { formatMinutes } from './punish.js';
 import { ESCALATIONS, PRESETS } from './settings.js';
 
@@ -43,8 +43,9 @@ const TITLES = {
  * @param {object[]} c.results judged items (from judge.judgeAll)
  * @param {string[]} [c.notes] what else happened: timeouts, cleanup, failures
  * @param {string[]} [c.signals] why it looked suspicious beyond the scores
+ * @param {string|null} [c.title] replaces the usual title
  */
-export function caseEmbed({ caseId, action, reason, message, results, notes = [], signals = [] }) {
+export function caseEmbed({ caseId, action, reason, message, results, notes = [], signals = [], title = null }) {
   const author = message.author;
   const accountDays = Math.floor((Date.now() - author.createdTimestamp) / 86_400_000);
   const what = {
@@ -63,7 +64,7 @@ export function caseEmbed({ caseId, action, reason, message, results, notes = []
 
   const embed = new EmbedBuilder()
     .setColor(action === 'delete' ? COLORS.croaked : COLORS.review)
-    .setTitle(TITLES[action](reason))
+    .setTitle((title ?? TITLES[action](reason)).slice(0, 256))
     .setDescription(lines.join('\n').slice(0, 4000))
     .setFooter({ text: `Case #${caseId} · checked in ${Math.max(0, ...results.map((r) => r.ms ?? 0))}ms` })
     .setTimestamp();
@@ -74,28 +75,69 @@ export function caseEmbed({ caseId, action, reason, message, results, notes = []
   return embed;
 }
 
-/** Buttons under a case. Deletes get "Not spam"; reviews get Approve and Block. */
-export function caseButtons(caseId, action) {
-  const approve = new ButtonBuilder()
-    .setCustomId(`croak:approve:${caseId}`)
-    .setLabel(action === 'delete' ? 'Not spam' : 'Approve')
-    .setStyle(ButtonStyle.Secondary);
-  const block = new ButtonBuilder().setCustomId(`croak:block:${caseId}`).setLabel('Block').setStyle(ButtonStyle.Danger);
-  return [new ActionRowBuilder().addComponents(action === 'delete' ? [approve] : [approve, block])];
+/**
+ * Buttons under a case, plus a "More actions" menu. Deletes get "Not spam"; reviews get Approve and
+ * Block; a flagged message that's still up gets a link to jump to it.
+ * @param {number} caseId
+ * @param {'delete'|'hold'|'flag'|'report'} action
+ * @param {{ guildId?: string, channelId?: string, messageId?: string, hasLinks?: boolean, hasContent?: boolean }} [ctx]
+ */
+export function caseButtons(caseId, action, ctx = {}) {
+  const buttons = [];
+  if (action === 'delete') {
+    buttons.push(new ButtonBuilder().setCustomId(`croak:approve:${caseId}`).setLabel('Not spam').setStyle(ButtonStyle.Secondary));
+  } else if (action === 'report') {
+    buttons.push(
+      new ButtonBuilder().setCustomId(`croak:block:${caseId}`).setLabel('Croak it').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`croak:dismiss:${caseId}`).setLabel('Dismiss').setStyle(ButtonStyle.Secondary),
+    );
+  } else {
+    buttons.push(
+      new ButtonBuilder().setCustomId(`croak:approve:${caseId}`).setLabel('Approve').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`croak:block:${caseId}`).setLabel('Block').setStyle(ButtonStyle.Danger),
+    );
+  }
+  if ((action === 'flag' || action === 'report') && ctx.guildId && ctx.channelId && ctx.messageId) {
+    buttons.push(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Jump to message').setURL(messageLink(ctx.channelId, ctx.messageId, ctx.guildId)));
+  }
+  return [new ActionRowBuilder().addComponents(buttons), new ActionRowBuilder().addComponents(caseMenu(caseId, ctx))];
+}
+
+/** The "More actions…" menu on a case. */
+export function caseMenu(caseId, { hasLinks = false, hasContent = false } = {}) {
+  const options = [
+    { label: 'Message the member…', value: 'dm', description: 'Send them a DM from Croak', emoji: '✉️' },
+    { label: 'Add a note…', value: 'note', description: 'Only mods see it, on this case', emoji: '📝' },
+    { label: 'Their history', value: 'history', description: 'Past cases, strikes, watch and trust', emoji: '🗂️' },
+    { label: 'Watch them for 7 days', value: 'watch', description: 'Hold every link and image they post', emoji: '👀' },
+    { label: 'Time out for 1 day', value: 'timeout', emoji: '⏳' },
+    { label: 'Remove their timeout', value: 'untimeout', emoji: '🔓' },
+    { label: 'Kick', value: 'kick', emoji: '👢' },
+    { label: 'Ban…', value: 'ban', description: 'Asks you to confirm', emoji: '🔨' },
+  ];
+  if (hasLinks) options.splice(3, 0, { label: 'Block the whole site', value: 'blocksite', description: 'Every link on these sites, in this server', emoji: '🚫' });
+  if (hasContent) options.splice(1, 0, { label: 'Repost the message', value: 'repost', description: 'Under their name, with pings off', emoji: '↩️' });
+  return new StringSelectMenuBuilder().setCustomId(`croak:more:${caseId}`).setPlaceholder('More actions…').addOptions(options);
 }
 
 /** The same embed, marked as resolved by a mod. */
 export function resolvedEmbed(original, { resolution, by, note }) {
+  const look = {
+    approved: [COLORS.approved, 'Approved'],
+    blocked: [COLORS.croaked, 'Blocked'],
+    dismissed: [COLORS.info, 'Dismissed'],
+  }[resolution] ?? [COLORS.info, resolution];
   return EmbedBuilder.from(original)
-    .setColor(resolution === 'approved' ? COLORS.approved : COLORS.croaked)
-    .addFields({ name: resolution === 'approved' ? 'Approved' : 'Blocked', value: `by ${by}${note ? `. ${note}` : ''}`.slice(0, 1024) });
+    .setColor(look[0])
+    .addFields({ name: look[1], value: `by ${by}${note ? `. ${note}` : ''}`.slice(0, 1024) });
 }
 
 /** The DM to a member whose message was deleted. Kind: many of them were hacked. */
-export function memberNotice({ guildName, channelName, reason, caseId }) {
+export function memberNotice({ guildName, channelName, reason, caseId, note = null }) {
   const content =
     `Your message in #${channelName} (${guildName}) was removed because Croak flagged it as a ${reason}. ` +
     "If you didn't send it, your account may be compromised: change your password and turn on two-factor authentication.\n" +
+    (note ? `\n**From the ${guildName} mods:** ${note}\n\n` : '') +
     'If this was a mistake, tell the mods with the button below.';
   const appeal = new ButtonBuilder().setCustomId(`croak:appeal:${caseId}`).setLabel('This was a mistake').setStyle(ButtonStyle.Secondary);
   return { content, components: [new ActionRowBuilder().addComponents(appeal)] };
@@ -117,8 +159,54 @@ export function appealButtons(caseId) {
     new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(`croak:accept:${caseId}`).setLabel('Accept: not spam').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId(`croak:reject:${caseId}`).setLabel('Keep it removed').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`croak:reply:${caseId}`).setLabel('Reply…').setStyle(ButtonStyle.Primary),
     ),
   ];
+}
+
+/** A mod's reply to a member, as the member sees it in their DMs. */
+export function modReplyDM({ guildName, text, caseId, canReply = true }) {
+  const content = `**The ${guildName} mods replied about your removed message:**\n>>> ${text}`;
+  const components = canReply
+    ? [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`croak:mreply:${caseId}`).setLabel('Reply to the mods').setStyle(ButtonStyle.Secondary))]
+    : [];
+  return { content, components };
+}
+
+/** One message in an appeal conversation, as posted in the mod log. */
+export function conversationEmbed({ caseId, from, to, text, fromMember }) {
+  return new EmbedBuilder()
+    .setColor(fromMember ? COLORS.review : COLORS.info)
+    .setAuthor({ name: `${fromMember ? 'Member' : 'Mod'} reply · case #${caseId}` })
+    .setDescription(`${from} → ${to}\n${codeBlock(text)}`)
+    .setTimestamp();
+}
+
+/** Buttons for the next step in an appeal conversation, shown to mods. */
+export function replyButton(caseId) {
+  return [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`croak:reply:${caseId}`).setLabel('Reply…').setStyle(ButtonStyle.Primary))];
+}
+
+/** A member's report of someone else's message. */
+export function reportEmbed({ caseId, reporter, message, results, reason }) {
+  const lines = [
+    `**Reported by** ${reporter} · **Author** ${message.author} · \`${message.author.id}\``,
+    `**Channel** ${message.channel}`,
+    reason ? `**Why** ${reason}` : null,
+    message.content ? codeBlock(message.content) : '_No text: attachments only._',
+  ].filter(Boolean);
+  const embed = new EmbedBuilder()
+    .setColor(COLORS.review)
+    .setTitle('Reported by a member')
+    .setDescription(lines.join('\n').slice(0, 4000))
+    .setFooter({ text: `Case #${caseId} · the message is still up` })
+    .setTimestamp();
+  const checked = results.filter((r) => r.item);
+  embed.addFields({
+    name: 'Croak’s check',
+    value: checked.length ? checked.slice(0, 8).map((r) => `\`${r.label.slice(0, 80)}\` · ${r.verdict} · ${scoreLine(r)}`).join('\n').slice(0, 1024) : 'No links, invites or images to check.',
+  });
+  return embed;
 }
 
 /** Raid alert. */
@@ -130,6 +218,16 @@ export function raidEmbed({ count, minutes }) {
       `${count} new accounts were croaked in the last few minutes. For the next ${minutes} minutes, Croak holds every link, invite and image from new members until a mod reviews it.`,
     )
     .setTimestamp();
+}
+
+/** Raid alert actions. */
+export function raidButtons() {
+  return [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('croak:lock:30').setLabel('Lock down for 30 min').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('croak:banraid:ask').setLabel('Ban the raiders…').setStyle(ButtonStyle.Secondary),
+    ),
+  ];
 }
 
 /** For /croak check. */
@@ -222,6 +320,54 @@ export function statsEmbed({ guild, days, usage, summary }) {
     );
 }
 
+const EVENT_WORDS = {
+  note: '📝 note',
+  mod_reply: '💬 mods replied',
+  member_reply: '💬 member replied',
+  action: '⚡',
+  report: '🚩 reported',
+};
+
+/** /croak case: one case at a glance, with its history and a link to the log entry. */
+export function caseSummaryView(found, events = [], logChannelId = null) {
+  const ts = (ms) => `<t:${Math.floor(ms / 1000)}:R>`;
+  const word = { delete: 'Croaked', hold: 'Held', flag: 'Flagged', report: 'Reported' }[found.action] ?? found.action;
+  const lines = [
+    `**Member** <@${found.author_id}> · \`${found.author_id}\``,
+    `**Channel** <#${found.channel_id}> · ${ts(found.created_at)}`,
+    found.resolution ? `**Outcome** ${found.resolution}${found.resolved_by ? ` by <@${found.resolved_by}>` : ''}` : '**Outcome** open',
+    found.appeal ? `**Appeal** ${found.appeal}` : null,
+    found.content ? codeBlock(found.content) : null,
+  ].filter(Boolean);
+  const embed = new EmbedBuilder()
+    .setColor(found.resolution === 'approved' ? COLORS.approved : found.action === 'delete' ? COLORS.croaked : COLORS.review)
+    .setTitle(`Case #${found.id}: ${word}${found.reason ? `, ${found.reason}` : ''}`.slice(0, 256))
+    .setDescription(lines.join('\n').slice(0, 4000));
+  const items = (found.items ?? []).filter((i) => i.verdict !== 'allow').slice(0, 5);
+  if (items.length) embed.addFields({ name: 'What Croak saw', value: items.map((i) => `\`${String(i.label ?? i.key ?? '').slice(0, 120)}\` · ${i.reason ?? i.verdict}`).join('\n').slice(0, 1024) });
+  if (events.length) {
+    embed.addFields({
+      name: 'History',
+      value: events
+        .slice(-10)
+        .map((e) => `${ts(e.at)} ${EVENT_WORDS[e.kind] ?? e.kind}${e.actor_id ? ` <@${e.actor_id}>` : ''}${e.text ? `: ${e.text.slice(0, 120)}` : ''}`)
+        .join('\n')
+        .slice(0, 1024),
+    });
+  }
+  const components = [];
+  const buttons = [];
+  if (found.log_message_id && logChannelId) {
+    buttons.push(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Open in mod log').setURL(messageLink(logChannelId, found.log_message_id, found.guild_id)));
+  }
+  if (found.action === 'flag' || found.action === 'report') {
+    buttons.push(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Jump to message').setURL(messageLink(found.channel_id, found.message_id, found.guild_id)));
+  }
+  if (buttons.length) components.push(new ActionRowBuilder().addComponents(buttons));
+  components.push(new ActionRowBuilder().addComponents(caseMenu(found.id, { hasLinks: (found.items ?? []).some((i) => i.kind === 'link'), hasContent: Boolean(found.content) })));
+  return { embeds: [embed], components };
+}
+
 /** /croak help */
 export function helpEmbed() {
   const cmd = (name, text) => `\`/croak ${name}\` ${text}`;
@@ -242,6 +388,17 @@ export function helpEmbed() {
         cmd('exempt-channel', 'Skip a channel.'),
         cmd('exempt-role', 'Skip members with a role.'),
         cmd('automod', "Mirror confirmed scam sites into Discord's AutoMod."),
+        '',
+        '**Mod tools**',
+        cmd('settings', 'Every main setting on one screen, with menus and toggles.'),
+        cmd('member', "Someone's cases and strikes, plus watch, trust, purge, timeout and ban."),
+        cmd('case', 'Look up a case by number.'),
+        cmd('lockdown', 'Slowmode everywhere and pause invites, for a set time.'),
+        cmd('message', 'Add your own line to the DM members get.'),
+        cmd('digest', 'A weekly summary in your mod log.'),
+        cmd('test', 'Post a sample case, to see what one looks like.'),
+        'Every case has buttons and a **More actions** menu: message the member, add a note, watch them, block the whole site, repost, timeout, kick or ban.',
+        'Right-click a message → **Apps**: *Report to mods* (everyone), *Croak this message*, *Check with Croak*. Right-click a member → *Croak: member*.',
         '',
         '**Lists**',
         cmd('check', 'See what Croak would do with a link or invite.'),
