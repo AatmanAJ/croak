@@ -3,3 +3,6 @@ node_modules/
 results/
 data/
 .DS_Store
+
+# rendered videos
+demo/*.mp4

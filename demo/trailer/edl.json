@@ -1,0 +1,320 @@
+{
+ "canvas": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 60,
+  "frames": 1800,
+  "bg": "#0E1F17"
+ },
+ "clips": {
+  "img": {
+   "frames_dir": "plates/img"
+  },
+  "btc": {
+   "frames_dir": "plates/btc"
+  },
+  "rep": {
+   "frames_dir": "plates/rep"
+  },
+  "stm": {
+   "frames_dir": "plates/stm"
+  },
+  "typo": {
+   "frames_dir": "plates/typo"
+  },
+  "air": {
+   "frames_dir": "plates/air"
+  },
+  "cyr": {
+   "frames_dir": "plates/cyr"
+  },
+  "qr": {
+   "frames_dir": "plates/qr"
+  },
+  "dm": {
+   "frames_dir": "plates/dm"
+  }
+ },
+ "shots": [
+  {
+   "t0": 0,
+   "t1": 4.0,
+   "special": {
+    "type": "scene",
+    "scene": "open"
+   }
+  },
+  {
+   "t0": 4.0,
+   "t1": 4.75,
+   "clip": "img",
+   "src": 0.15,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "img"
+    }
+   }
+  },
+  {
+   "t0": 4.75,
+   "t1": 5.55,
+   "clip": "img",
+   "src": 1.04167,
+   "speed": 0,
+   "fx": {
+    "croak": {
+     "scene": "img"
+    }
+   }
+  },
+  {
+   "t0": 5.55,
+   "t1": 6.5,
+   "clip": "img",
+   "src": 1.025,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "img"
+    }
+   }
+  },
+  {
+   "t0": 6.5,
+   "t1": 7.05,
+   "clip": "btc",
+   "src": 0.375,
+   "speed": 0.25,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "btc"
+    }
+   }
+  },
+  {
+   "t0": 7.05,
+   "t1": 7.5,
+   "clip": "btc",
+   "src": 1.70833,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "btc"
+    }
+   }
+  },
+  {
+   "t0": 7.5,
+   "t1": 8.05,
+   "clip": "rep",
+   "src": 0.34167,
+   "speed": 0.25,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "rep"
+    }
+   }
+  },
+  {
+   "t0": 8.05,
+   "t1": 8.5,
+   "clip": "rep",
+   "src": 2.175,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "rep"
+    }
+   }
+  },
+  {
+   "t0": 8.5,
+   "t1": 9.05,
+   "clip": "stm",
+   "src": 0.325,
+   "speed": 0.25,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "stm"
+    }
+   }
+  },
+  {
+   "t0": 9.05,
+   "t1": 9.5,
+   "clip": "stm",
+   "src": 1.59167,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "stm"
+    }
+   }
+  },
+  {
+   "t0": 9.5,
+   "t1": 10.05,
+   "clip": "typo",
+   "src": 0.34167,
+   "speed": 0.25,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "typo"
+    }
+   }
+  },
+  {
+   "t0": 10.05,
+   "t1": 10.5,
+   "clip": "typo",
+   "src": 1.675,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "typo"
+    }
+   }
+  },
+  {
+   "t0": 10.5,
+   "t1": 11.05,
+   "clip": "air",
+   "src": 0.34167,
+   "speed": 0.25,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "air"
+    }
+   }
+  },
+  {
+   "t0": 11.05,
+   "t1": 11.5,
+   "clip": "air",
+   "src": 1.15833,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "air"
+    }
+   }
+  },
+  {
+   "t0": 11.5,
+   "t1": 12.05,
+   "clip": "cyr",
+   "src": 0.35833,
+   "speed": 0.25,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "cyr"
+    }
+   }
+  },
+  {
+   "t0": 12.05,
+   "t1": 12.5,
+   "clip": "cyr",
+   "src": 1.49167,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "mont",
+     "key": "cyr"
+    }
+   }
+  },
+  {
+   "t0": 12.5,
+   "t1": 15.0,
+   "clip": "qr",
+   "src": 0.25833,
+   "speed": 1,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "qr"
+    }
+   }
+  },
+  {
+   "t0": 15.0,
+   "t1": 17.5,
+   "clip": "dm",
+   "src": 0.00833,
+   "speed": 0.4,
+   "blend": false,
+   "loop": "clamp",
+   "fx": {
+    "croak": {
+     "scene": "dm"
+    }
+   }
+  },
+  {
+   "t0": 17.5,
+   "t1": 23.0,
+   "special": {
+    "type": "scene",
+    "scene": "feat"
+   }
+  },
+  {
+   "t0": 23.0,
+   "t1": 25.0,
+   "special": {
+    "type": "scene",
+    "scene": "every"
+   }
+  },
+  {
+   "t0": 25.0,
+   "t1": 30.0,
+   "special": {
+    "type": "scene",
+    "scene": "end"
+   }
+  }
+ ]
+}
