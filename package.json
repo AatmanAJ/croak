@@ -7,10 +7,10 @@
   "homepage": "https://croakbot.base44.app",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AJ-Base44/croak.git"
+    "url": "git+https://github.com/AatmanAJ/croak.git"
   },
   "bugs": {
-    "url": "https://github.com/AJ-Base44/croak/issues"
+    "url": "https://github.com/AatmanAJ/croak/issues"
   },
   "type": "module",
   "engines": {
