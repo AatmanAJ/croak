@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Croak v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --canvas: #DCDDD7; --lime: #DAF36B; --lime2: #E9F8A6; --olive: #222F0E; --ink: #1C250F; --body: #5B6152; --blue: #DCE8EE; --lav: #DEDFF6; }
+  body { background: var(--canvas); color: var(--ink); font-family: 'Inter Tight', sans-serif; padding: 40px 0 80px; letter-spacing: -.01em; }
+  .wrap { width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+  .panel { background: #fff; border-radius: 32px; overflow: hidden; position: relative; }
+  h1, h2 { font-weight: 500; letter-spacing: -.055em; line-height: .98; color: var(--ink); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--olive); color: #F3F7E4; border-radius: 999px; padding: 12px 20px; font-size: 14px; font-weight: 500; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid #C9CCBF; }
+  .arrow { width: 14px; height: 14px; }
+  .muted { color: var(--body); }
+
+  /* hero */
+  .hero-top { background: var(--lime); padding: 56px 0 64px; text-align: center; position: relative; }
+  .nav { position: absolute; left: 40px; right: 40px; top: 28px; display: flex; align-items: center; font-size: 14px; font-weight: 500; }
+  .logo { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 22px; letter-spacing: -.05em; }
+  .nav .links { display: flex; gap: 30px; margin-left: 56px; }
+  .nav .right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  .hero-top h1 { font-size: 104px; margin-top: 70px; }
+  .hero-top p { margin: 22px auto 0; width: 560px; font-size: 17px; line-height: 1.45; color: #3A4528; }
+  .hero-cta { margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 16px; font-size: 14px; }
+  .sep { width: 1px; height: 22px; background: #A9BA5C; }
+  .hero-photo { height: 540px; position: relative; overflow: hidden; background: #1d1626; }
+  .hero-photo .img { position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1725273447528-8ef67b6347bb?w=2400&q=80&fm=jpg') 25% 30% / cover; transform: scaleX(-1); }
+  .hero-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,16,30,.45), rgba(20,16,30,0) 60%); }
+  .w { position: absolute; z-index: 2; border-radius: 22px; }
+  .chart { left: 32px; bottom: 32px; width: 330px; height: 330px; background: var(--lime); padding: 22px; }
+  .chart .t { display: flex; justify-content: space-between; align-items: center; font-size: 21px; font-weight: 500; letter-spacing: -.03em; }
+  .chart .badge { background: var(--olive); color: var(--lime); font-size: 11px; padding: 4px 8px; border-radius: 999px; }
+  .chart .tabs { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; color: #55632C; } .chart .tabs b { color: var(--ink); font-weight: 500; }
+  .bars { position: absolute; left: 22px; right: 22px; bottom: 50px; height: 150px; display: flex; align-items: flex-end; gap: 10px; }
+  .bars div { flex: 1; display: flex; flex-direction: column; gap: 6px; justify-content: flex-end; }
+  .bars span { display: block; border-radius: 6px; }
+  .chart .foot { position: absolute; left: 22px; bottom: 20px; font-size: 11.5px; color: #55632C; }
+  .val { left: 382px; width: 240px; padding: 22px 24px; font-size: 40px; font-weight: 500; letter-spacing: -.05em; }
+  .val small { display: block; font-size: 12px; letter-spacing: -.01em; font-weight: 400; margin-bottom: 6px; color: #55632C; }
+  .reel { position: absolute; z-index: 2; right: 32px; bottom: 34px; color: #fff; font-size: 14px; display: flex; gap: 14px; align-items: center; }
+  .play { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.18); backdrop-filter: blur(6px); display: grid; place-items: center; }
+
+  /* bento */
+  .bento { padding: 64px 40px 40px; }
+  .bento .head { display: flex; justify-content: space-between; align-items: center; }
+  .bento h2 { font-size: 60px; }
+  .cards { margin-top: 44px; display: grid; grid-template-columns: 1fr 1fr 1.45fr; gap: 16px; height: 400px; }
+  .c { border-radius: 22px; position: relative; overflow: hidden; padding: 26px; }
+  .c.g { background: linear-gradient(140deg, #B7E36A 0%, #E6F7B5 55%, #9DD44E 100%); }
+  .c.l { background: var(--lav); }
+  .c.p { background: #333 url('https://images.unsplash.com/photo-1758525862799-abc444d66186?w=1400&q=80&fm=jpg&fit=crop&h=900') center / cover; color: #fff; }
+  .c.p::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,0) 35%, rgba(0,0,0,.55)); }
+  .c.p * { position: relative; z-index: 1; }
+  .inner { background: #fff; border-radius: 16px; padding: 22px; position: absolute; left: 26px; right: 26px; bottom: 26px; color: var(--ink); }
+  .chipz { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+  .chip { font-size: 12.5px; padding: 7px 12px; border-radius: 999px; background: var(--lime); }
+  .chip.d { background: var(--olive); color: #EFF5DA; }
+  .ctitle { font-size: 34px; font-weight: 500; letter-spacing: -.05em; line-height: 1; }
+  .meter { height: 8px; border-radius: 4px; background: #EEF0E8; display: flex; overflow: hidden; margin-top: 10px; }
+
+  /* calculator */
+  .calc { display: grid; grid-template-columns: 1fr 470px; gap: 60px; padding: 72px 72px 72px 72px; align-items: center; }
+  .calc h2 { font-size: 64px; }
+  .calc p { margin: 26px 0 30px; font-size: 17px; line-height: 1.5; color: #3A4528; width: 470px; }
+  .lc { background: var(--lime); border-radius: 26px; padding: 28px; position: relative; }
+  .lc .row { border-top: 1px solid #C2D86A; padding-top: 18px; margin-top: 18px; }
+  .lc .k { font-size: 15px; color: #3A4528; }
+  .lc .v { font-size: 46px; font-weight: 500; letter-spacing: -.05em; margin-top: 8px; }
+  .slider { position: relative; height: 6px; background: #EDF8C2; border-radius: 3px; margin: 22px 0 8px; }
+  .slider i { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; background: var(--olive); border-radius: 3px; }
+  .slider b { position: absolute; left: 50%; top: -9px; width: 14px; height: 24px; background: var(--olive); border-radius: 4px; margin-left: -7px; }
+  .ticks { display: flex; justify-content: space-between; font-size: 12.5px; color: #55632C; }
+
+  /* faq */
+  .faq { background: var(--olive); color: #E9EFD7; display: grid; grid-template-columns: 1fr 1.1fr; gap: 60px; padding: 72px; }
+  .faq h2 { color: var(--lime); font-size: 64px; }
+  .faq .q { border-bottom: 1px solid #3E4D25; padding: 22px 0; display: flex; justify-content: space-between; font-size: 19px; letter-spacing: -.02em; }
+  .faq .a { font-size: 15px; line-height: 1.6; color: #B5C095; padding: 0 0 22px; border-bottom: 1px solid #3E4D25; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="arr" viewBox="0 0 16 16"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="mark" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#222F0E"/><circle cx="11" cy="17" r="5" fill="#DAF36B"/><circle cx="21" cy="17" r="5" fill="#DAF36B"/><rect x="5" y="11" width="22" height="5.2" fill="#222F0E"/><circle cx="9.6" cy="18.4" r="1.9" fill="#222F0E"/><circle cx="19.6" cy="18.4" r="1.9" fill="#222F0E"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <!-- hero -->
+  <div class="panel">
+    <div class="hero-top">
+      <div class="nav">
+        <div class="logo"><svg width="30" height="30"><use href="#mark"/></svg>croak</div>
+        <div class="links"><span>Product</span><span>How it works</span><span>For mods</span><span>Docs</span></div>
+        <div class="right"><span class="btn ghost" style="border-color:#A9BA5C">GitHub</span><span class="btn">Add to Discord <svg class="arrow"><use href="#arr"/></svg></span></div>
+      </div>
+      <h1>Keep scams out of<br>fast-moving servers</h1>
+      <p>AI moderation for Discord. Croak checks every link, invite and image in about 0.2 seconds, and removes scams, phishing and NSFW spam before anyone clicks.</p>
+      <div class="hero-cta"><span class="btn">Add to Discord <svg class="arrow"><use href="#arr"/></svg></span><span class="sep"></span><span>Free and open source</span></div>
+    </div>
+    <div class="hero-photo">
+      <div class="img"></div>
+      <div class="w chart">
+        <div class="t">Croaked<span class="badge">this week</span></div>
+        <div class="tabs"><b>Scams</b><span>Phishing</span><span>NSFW</span></div>
+        <div class="bars">
+          <div><span style="height:22px;background:#B4CF4E"></span><span style="height:30px;background:var(--olive)"></span></div>
+          <div><span style="height:18px;background:#B4CF4E"></span><span style="height:46px;background:var(--olive)"></span></div>
+          <div><span style="height:14px;background:#B4CF4E"></span><span style="height:28px;background:var(--olive)"></span></div>
+          <div><span style="height:26px;background:#B4CF4E"></span><span style="height:70px;background:var(--olive)"></span></div>
+          <div><span style="height:16px;background:#B4CF4E"></span><span style="height:52px;background:var(--olive)"></span></div>
+        </div>
+        <div class="foot">Every case lands in your mod log</div>
+      </div>
+      <div class="w val" style="bottom:200px;background:#F2FAD0"><small>New link in #general</small>scam 0.99</div>
+      <div class="w val" style="bottom:32px;background:var(--lime)"><small>Deleted in</small>190 ms</div>
+      <div class="reel">Watch the 30-second demo<span class="play">▶</span></div>
+    </div>
+  </div>
+
+  <!-- bento -->
+  <div class="panel bento">
+    <div class="head"><h2>Catches what Discord's filter doesn't</h2><span class="btn ghost">Everything it catches <svg class="arrow"><use href="#arr"/></svg></span></div>
+    <div class="cards">
+      <div class="c g">
+        <div class="inner">
+          <div style="font-size:19px;font-weight:500;letter-spacing:-.03em">Every kind of scam link</div>
+          <div class="chipz"><span class="chip d">Free Nitro</span><span class="chip">Steam trades</span><span class="chip">Crypto giveaways</span><span class="chip d">Look-alike domains</span><span class="chip">QR logins</span></div>
+          <div class="muted" style="font-size:12.5px;line-height:1.5">Short links are followed to where they really go before Croak decides.</div>
+        </div>
+      </div>
+      <div class="c l">
+        <div class="ctitle">Reads images<br>too.</div>
+        <div class="inner">
+          <div class="muted" style="font-size:12px">Image check</div>
+          <div style="font-size:24px;font-weight:500;letter-spacing:-.04em;margin-top:6px">MRBEAST_GIVEAWAY.png</div>
+          <div style="display:flex;gap:18px;margin-top:14px;font-size:12px" class="muted"><span>■ Scam 99%</span><span>■ Spam 41%</span><span>■ NSFW 0%</span></div>
+          <div class="meter"><span style="width:62%;background:var(--olive)"></span><span style="width:26%;background:#9DB64A"></span></div>
+        </div>
+      </div>
+      <div class="c p">
+        <div class="ctitle" style="color:#fff">Raids, handled</div>
+        <div style="position:absolute;left:26px;right:26px;bottom:26px;font-size:21px;line-height:1.25;letter-spacing:-.03em">A burst of fresh accounts? One button slows every channel and pauses invites, then puts it all back.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- calculator -->
+  <div class="panel calc">
+    <div>
+      <h2>One setting.<br>Your call.</h2>
+      <p>Pick how sure Croak has to be before it acts. Anything in between goes to your mods with the scores, and they always get the last word.</p>
+      <span class="btn">See how it decides <svg class="arrow"><use href="#arr"/></svg></span>
+    </div>
+    <div class="lc">
+      <div style="font-size:19px;font-weight:500;letter-spacing:-.03em">Sensitivity</div>
+      <div class="row"><div class="k">Your server</div><div class="v">Standard</div>
+        <div class="slider"><i></i><b></b></div><div class="ticks"><span>Relaxed</span><span>Standard</span><span>Strict</span></div>
+      </div>
+      <div class="row"><div class="k">Croaks at</div><div class="v">0.90 and up</div></div>
+      <div class="row"><div class="k">Sends to your mods</div><div class="v">0.60 – 0.90</div></div>
+    </div>
+  </div>
+
+  <!-- faq -->
+  <div class="panel faq">
+    <div><h2>Frequently<br>asked questions</h2><p style="margin-top:24px;font-size:16px;line-height:1.55;color:#B5C095;width:380px">Straight answers about what Croak reads, what it keeps, and what happens when it's wrong.</p></div>
+    <div>
+      <div class="q" style="border-bottom:0">Does Croak read every message?<span>–</span></div>
+      <div class="a">It looks at every message for links, invites and images. Plain chat with none of those is never sent anywhere. Messages from mods and the owner are never checked.</div>
+      <div class="q">What happens when it gets one wrong?<span>+</span></div>
+      <div class="q">How much does it cost?<span>+</span></div>
+      <div class="q">What permissions does it need?<span>+</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

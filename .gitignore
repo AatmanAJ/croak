@@ -6,3 +6,8 @@ data/
 
 # rendered videos
 demo/*.mp4
+
+# showreel: keys, deps and renders stay local
+demo/showreel/.env
+demo/showreel/node_modules/
+demo/showreel/out/

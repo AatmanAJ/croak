@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Croak v2 logo and hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --canvas: #E7E8EA; --ink: #121412; --mute: #8B8F8C; --line: #E4E6E3; --lime: #EEF67A; --mint: #CDF3C4; --green: #1F9A3E; --pond: #0F1A13; }
+  body { background: var(--canvas); color: var(--ink); font-family: 'Poppins', sans-serif; padding: 48px 0 80px; }
+  .title { width: 1440px; margin: 0 auto 18px; font-size: 15px; color: #555; display: flex; justify-content: space-between; }
+  .title b { color: var(--ink); font-weight: 600; font-size: 18px; }
+
+  .logos { width: 1440px; margin: 0 auto 64px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .opt { background: #fff; border-radius: 28px; padding: 32px; position: relative; overflow: hidden; }
+  .opt h3 { font-weight: 500; font-size: 15px; display: flex; justify-content: space-between; color: var(--mute); }
+  .opt h3 b { color: var(--ink); font-weight: 600; }
+  .opt .row { display: flex; align-items: center; gap: 22px; margin-top: 28px; }
+  .opt .app { width: 112px; height: 112px; border-radius: 26px; display: grid; place-items: center; }
+  .opt .round { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
+  .opt .lock { display: flex; align-items: center; gap: 10px; margin-top: 30px; font-weight: 600; font-size: 34px; letter-spacing: -.035em; }
+  .opt .small { display: flex; gap: 18px; align-items: center; margin-top: 22px; font-size: 13px; color: var(--mute); }
+  .opt p { margin-top: 18px; font-size: 13.5px; line-height: 1.6; color: #5b605c; }
+
+  .page { width: 1440px; height: 900px; margin: 0 auto; background: #fff; border-radius: 32px; position: relative; overflow: hidden; }
+  .grid-v { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .grid-h { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); }
+  .circ { position: absolute; border: 1px solid var(--line); border-radius: 50%; }
+  .nav { position: absolute; left: 0; right: 0; top: 0; height: 96px; display: flex; align-items: center; padding: 0 80px; font-size: 13px; font-weight: 500; letter-spacing: .02em; text-transform: uppercase; }
+  .nav .brand { display: flex; gap: 10px; align-items: center; font-size: 19px; letter-spacing: -.03em; text-transform: none; font-weight: 600; margin-right: 64px; }
+  .nav a { margin-right: 40px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; background: var(--lime); border: 1.2px solid var(--ink); border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: .02em; }
+  h1.hero { position: absolute; left: 80px; top: 170px; width: 660px; font-weight: 500; font-size: 58px; line-height: 1.12; letter-spacing: -.035em; }
+  .tog { display: inline-block; width: 64px; height: 34px; border: 3px solid var(--ink); border-radius: 999px; vertical-align: 4px; position: relative; margin: 0 4px; background: var(--mint); }
+  .tog::after { content: ''; position: absolute; right: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); }
+  .hl { background: var(--mint); padding: 0 8px; border-radius: 4px; }
+  .strike { position: relative; color: var(--mute); }
+  .strike::after { content: ''; position: absolute; left: -2px; right: -2px; top: 54%; height: 5px; background: #FF5C8A; border-radius: 3px; }
+  .lede { position: absolute; left: 80px; top: 460px; width: 520px; font-size: 16px; line-height: 1.65; color: #4f5450; }
+  .ctas { position: absolute; left: 80px; top: 580px; display: flex; gap: 22px; align-items: center; }
+  .ghost { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: .02em; border-bottom: 1.2px solid var(--ink); padding-bottom: 3px; }
+  .checks { position: absolute; left: 80px; top: 690px; font-size: 13px; color: var(--mute); }
+  .chips { display: flex; gap: 10px; margin-top: 12px; }
+  .chip { border: 1px solid #D5D8D4; border-radius: 999px; padding: 6px 14px; font-size: 12.5px; color: var(--ink); }
+  .foot { position: absolute; left: 80px; right: 80px; bottom: 34px; display: flex; justify-content: space-between; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+
+  .chat { position: absolute; left: 860px; top: 120px; width: 500px; }
+  .rail { position: absolute; left: 790px; top: 130px; display: flex; flex-direction: column; gap: 22px; }
+  .rail i { width: 22px; height: 22px; border-radius: 50%; display: block; }
+  .msg { display: flex; gap: 12px; margin-bottom: 18px; }
+  .av { width: 34px; height: 34px; border-radius: 50%; flex: none; }
+  .who { font-size: 12.5px; font-weight: 600; } .who span { color: var(--mute); font-weight: 400; margin-left: 6px; }
+  .bubble { margin-top: 6px; background: #F3F4F2; border-radius: 4px 16px 16px 16px; padding: 12px 16px; font-size: 13.5px; line-height: 1.5; }
+  .gone { opacity: .45; text-decoration: line-through; text-decoration-color: #FF5C8A; text-decoration-thickness: 2px; }
+  .verdict { border: 1px solid #E1E4E0; border-radius: 18px; padding: 18px; margin: 6px 0 18px 46px; }
+  .vchips { display: flex; gap: 8px; margin-bottom: 12px; }
+  .vc { font-size: 12px; border-radius: 6px; padding: 4px 10px; border: 1px solid; font-family: 'JetBrains Mono'; }
+  .vtext { font-size: 13px; line-height: 1.6; color: #4f5450; }
+  .bar { display: flex; align-items: center; justify-content: space-between; border: 1px solid #E1E4E0; border-radius: 14px; padding: 12px 16px; font-size: 13.5px; color: var(--mute); margin-left: 46px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- 1: lily pad C. A disc with a notch is both a lily pad and the letter C; the dot is the fly it's about to catch -->
+    <symbol id="lily" viewBox="0 0 100 100">
+      <path d="M71.5 13.5 A42 42 0 1 0 86.5 28.5 L52 48 Z" fill="currentColor"/>
+      <circle cx="30" cy="66" r="6.5" fill="var(--dot, #FF5C8A)"/>
+    </symbol>
+    <!-- 2: side-eye. The old frog reduced to its eyes: two discs with flat lids, pupils glancing left -->
+    <symbol id="eyes" viewBox="0 0 100 100">
+      <clipPath id="ce1"><circle cx="31" cy="50" r="22"/></clipPath><clipPath id="ce2"><circle cx="69" cy="50" r="22"/></clipPath>
+      <g clip-path="url(#ce1)"><rect x="0" y="0" width="100" height="100" fill="currentColor"/><rect x="0" y="47" width="100" height="40" fill="var(--white, #fff)"/><circle cx="24" cy="57" r="9" fill="currentColor"/></g>
+      <g clip-path="url(#ce2)"><rect x="0" y="0" width="100" height="100" fill="currentColor"/><rect x="0" y="47" width="100" height="40" fill="var(--white, #fff)"/><circle cx="62" cy="57" r="9" fill="currentColor"/></g>
+    </symbol>
+    <!-- 3: catch. A tongue's arc snapping a dot: reads as a check mark and a C -->
+    <symbol id="catch" viewBox="0 0 100 100">
+      <path d="M78 26 A34 34 0 1 0 82 70" fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round"/>
+      <circle cx="82" cy="70" r="11" fill="var(--dot, #FF5C8A)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="title"><b>Logo options</b><span>The old frog can stay as a mascot for fun moments, like the trailer and member DMs</span></div>
+<div class="logos">
+  <div class="opt">
+    <h3><b>1 · Lily</b><span>recommended</span></h3>
+    <div class="row">
+      <div class="app" style="background:var(--pond);color:#8FE04E"><svg width="70" height="70"><use href="#lily"/></svg></div>
+      <div class="round" style="background:#8FE04E;color:var(--pond);--dot:var(--pond)"><svg width="44" height="44"><use href="#lily"/></svg></div>
+      <div class="round" style="background:#F2F3F1;color:var(--ink)"><svg width="44" height="44"><use href="#lily"/></svg></div>
+    </div>
+    <div class="lock" style="color:var(--ink)"><svg width="38" height="38" style="color:var(--green)"><use href="#lily"/></svg>croak</div>
+    <p>A lily pad: a disc with a narrow slit to its centre, with one dot resting on it. It stays sharp at 16px and keeps the pond story without a cartoon face. Close to a pie chart, so it relies on the slit staying thin.</p>
+  </div>
+  <div class="opt">
+    <h3><b>2 · Side-eye</b><span>keeps the character</span></h3>
+    <div class="row">
+      <div class="app" style="background:#8FE04E;color:var(--pond)"><svg width="80" height="80"><use href="#eyes"/></svg></div>
+      <div class="round" style="background:var(--pond);color:#8FE04E;--white:#F2F7E9"><svg width="54" height="54"><use href="#eyes"/></svg></div>
+      <div class="round" style="background:#F2F3F1;color:var(--ink)"><svg width="54" height="54"><use href="#eyes"/></svg></div>
+    </div>
+    <div class="lock" style="color:var(--ink)"><svg width="42" height="42" style="color:var(--ink)"><use href="#eyes"/></svg>croak</div>
+    <p>The current frog reduced to its eyes: half-closed lids, glancing left. It's the most recognisable carry-over, and a bit of attitude without a cartoon face.</p>
+  </div>
+  <div class="opt">
+    <h3><b>3 · Catch</b><span>most abstract</span></h3>
+    <div class="row">
+      <div class="app" style="background:var(--ink);color:#fff"><svg width="70" height="70"><use href="#catch"/></svg></div>
+      <div class="round" style="background:#8FE04E;color:var(--pond);--dot:var(--pond)"><svg width="46" height="46"><use href="#catch"/></svg></div>
+      <div class="round" style="background:#F2F3F1;color:var(--ink)"><svg width="46" height="46"><use href="#catch"/></svg></div>
+    </div>
+    <div class="lock" style="color:var(--ink)"><svg width="38" height="38" style="color:var(--ink)"><use href="#catch"/></svg>croak</div>
+    <p>A tongue's arc snapping a dot. It reads as a C and a tick. It's the most "security product" of the three, and the least frog.</p>
+  </div>
+</div>
+
+<div class="title"><b>Hero in your reference style</b><span>with logo 1</span></div>
+<div class="page">
+  <div class="grid-h" style="top:96px"></div>
+  <div class="grid-h" style="top:780px"></div>
+  <div class="grid-v" style="left:760px"></div>
+  <div class="grid-v" style="left:1180px;top:0;height:96px"></div>
+  <div class="grid-v" style="left:330px;top:780px"></div>
+  <div class="circ" style="width:170px;height:170px;left:1095px;top:-75px"></div>
+  <div class="circ" style="width:190px;height:190px;left:665px;top:690px"></div>
+
+  <div class="nav">
+    <div class="brand"><svg width="28" height="28" style="color:var(--green)"><use href="#lily"/></svg>croak</div>
+    <a>Product</a><a>How it works ⌄</a><a>Docs</a>
+    <span style="margin-left:auto;margin-right:40px">hello@aatmanjain.com</span>
+    <span class="pill">Add to Discord ↗</span>
+  </div>
+
+  <h1 class="hero">Say goodbye <span class="tog"></span> to <span class="strike">scam links</span> and hello to a server that's <span class="hl">clean</span></h1>
+  <p class="lede">Croak checks every link, invite and image posted in your Discord, and removes scams, phishing and NSFW spam in about a fifth of a second, before anyone clicks.</p>
+  <div class="ctas"><span class="pill">Add to Discord ↗</span><span class="ghost">Read the docs</span></div>
+  <div class="checks">It checks
+    <div class="chips"><span class="chip">Links</span><span class="chip">Server invites</span><span class="chip">Images</span><span class="chip">QR codes</span><span class="chip">Forwards</span></div>
+  </div>
+
+  <div class="rail"><i style="background:#FFD7A8"></i><i style="background:#F7B6C8"></i><i style="background:#B9E3C6"></i><i style="background:#C9C2F2"></i><i style="background:#A9D8F5"></i><i style="background:#FFD7A8"></i><i style="background:#F7B6C8"></i><i style="background:#B9E3C6"></i><i style="background:#C9C2F2"></i></div>
+  <div class="chat">
+    <div class="msg"><div class="av" style="background:#F7B6C8"></div><div><div class="who">maya<span>19:20</span></div><div class="bubble">anyone up for ranked tonight?</div></div></div>
+    <div class="msg"><div class="av" style="background:#C9C2F2"></div><div><div class="who">nitro_drops<span>19:20</span></div><div class="bubble gone">Free Nitro for 3 months, claim fast dlscord-gift.com/nitro</div></div></div>
+    <div class="verdict">
+      <div class="vchips"><span class="vc" style="color:#C2305F;border-color:#F4B4C8;background:#FFF0F4">scam 0.99</span><span class="vc" style="color:#6c716d;border-color:#E1E4E0">nsfw 0.00</span><span class="vc" style="color:#9A6A07;border-color:#F3DDA6;background:#FFF8E6">spam 0.94</span><span class="vc" style="color:var(--green);border-color:#C3E9C1;background:#F1FBEE">190ms</span></div>
+      <div class="vtext">Croaked: scam link. The domain is a misspelling of discord. Message deleted, nitro_drops timed out for 1 hour, case #142 in your mod log.</div>
+    </div>
+    <div class="bar">Message #general <span style="display:flex;gap:10px;color:#b5b9b6">☺ ⌁ ⊕</span></div>
+  </div>
+
+  <div class="foot"><span>Open source</span><span style="margin-left:250px">Docs &nbsp;&nbsp; GitHub &nbsp;&nbsp; Privacy</span><span>© 2026</span></div>
+</div>
+</body>
+</html>
