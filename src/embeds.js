@@ -6,7 +6,8 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, messageLink
 import { formatMinutes } from './punish.js';
 import { ESCALATIONS, PRESETS } from './settings.js';
 
-export const SITE_URL = 'https://croakbot.base44.app';
+// Where the docs live. Forks can point this at their own site with SITE_URL in .env.
+export const SITE_URL = (process.env.SITE_URL || 'https://croakbot.base44.app').replace(/\/$/, '');
 
 export const COLORS = {
   croaked: 0xff5c8a,

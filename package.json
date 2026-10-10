@@ -1,8 +1,17 @@
 {
-  "name": "discord-mod",
+  "name": "croak",
   "version": "0.1.0",
   "private": true,
   "description": "Discord moderation bot that checks links, invites and images for spam, scams and NSFW content",
+  "license": "MIT",
+  "homepage": "https://croakbot.base44.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AJ-Base44/croak.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AJ-Base44/croak/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

@@ -3,8 +3,10 @@
 // that posts a "Croak needs a fix" card in the mod log as soon as something breaks.
 
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, PermissionFlagsBits as P, PermissionsBitField } from 'discord.js';
+import { SITE_URL } from './embeds.js';
 
-const DOCS_URL = 'https://croakbot.base44.app/docs#permissions';
+// read when needed: embeds.js imports this file too (through punish.js), so it may not be loaded yet
+const docsUrl = () => `${SITE_URL}/docs#permissions`;
 
 /** Every permission a Croak feature uses: [flag, name as Discord shows it, what it's for]. */
 export const PERMISSIONS = [
@@ -38,7 +40,7 @@ export function fixRow(guild) {
   const appId = guild.client?.application?.id ?? guild.client?.user?.id;
   const row = new ActionRowBuilder();
   if (appId) row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Fix permissions').setURL(inviteUrl(appId, guild.id)));
-  row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('How to fix it').setURL(DOCS_URL));
+  row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('How to fix it').setURL(docsUrl()));
   return row;
 }
 

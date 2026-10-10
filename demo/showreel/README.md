@@ -21,3 +21,5 @@ Notes:
 - Concurrency above 8 fails to open its pages.
 - The voice is Fish Audio's "Conversational Narrator", read with the free `s2.1-pro-free` model. Other candidate voices are in `public/vo/samples/`, and `node vo/fish.mjs build tech-male` swaps the voice. Takes are cached in `public/vo/cache` so rebuilds are stable.
 - Lines are checked with local whisper.cpp; Fish's own transcription needs paid API credit.
+- The voiceover audio isn't in the repo. `node vo/fish.mjs build` makes it with your own Fish Audio key.
+- Remotion isn't MIT: it's free for individuals and companies of up to three people, and needs a company license beyond that. See https://www.remotion.dev/license.

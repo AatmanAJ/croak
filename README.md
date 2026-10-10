@@ -12,6 +12,7 @@ A Discord bot that checks every link, server invite and image posted in a server
    DEV_GUILD_ID=...        # optional: register /croak instantly in one test server
    AI_DAILY_LIMIT=20000    # optional: AI calls per day across all servers (~$1.30)
    HEARTBEAT_URL=...       # optional: pinged every minute, for an uptime monitor
+   SITE_URL=...            # optional: your own docs site, linked from Croak's messages
    ```
 3. Install and start:
    ```bash
@@ -150,3 +151,12 @@ The numbers live in [src/config.js](src/config.js) and [src/settings.js](src/set
 | `src/commands.js`, `src/embeds.js` | The /croak command and every message Croak posts |
 | `src/db.js`, `src/settings.js`, `src/config.js` | Storage, per-server settings, tunables |
 | `src/jobs.js`, `src/trackers.js`, `src/repeats.js` | Housekeeping, welcome, in-memory trackers |
+| `src/health.js` | Every permission Croak uses, why an action failed, and the watcher that posts fix-it cards |
+
+## Contributing
+
+Bug reports, missed scams and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), and [SECURITY.md](SECURITY.md) for anything that shouldn't be public.
+
+## License
+
+[MIT](LICENSE). The showreel in `demo/showreel` is built with [Remotion](https://www.remotion.dev), which has its own license: free for individuals and small teams, paid for larger companies.
