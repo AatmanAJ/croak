@@ -1,0 +1,291 @@
+{
+  "voice": "542fc7aab61e4561bae5ebd536d717c0",
+  "report": [
+    {
+      "i": 0,
+      "t": 0.45,
+      "line": "It starts with one link.",
+      "speed": 1,
+      "spoken": 1.173,
+      "room": 1.69,
+      "fits": true,
+      "heard": "It starts with one link.",
+      "onsetCut": 0
+    },
+    {
+      "i": 1,
+      "t": 2.2,
+      "line": "Then it's everywhere.",
+      "speed": 1,
+      "spoken": 0.764,
+      "room": 1.79,
+      "fits": true,
+      "heard": "then it's everywhere.",
+      "onsetCut": 0
+    },
+    {
+      "i": 2,
+      "t": 4.05,
+      "line": "Fake Nitro.",
+      "speed": 1,
+      "spoken": 0.905,
+      "room": 0.94,
+      "fits": true,
+      "heard": "Fake Nitro.",
+      "onsetCut": 0
+    },
+    {
+      "i": 3,
+      "t": 5.05,
+      "line": "Phishing.",
+      "speed": 1,
+      "spoken": 0.65,
+      "room": 0.94,
+      "fits": true,
+      "heard": "fishing.",
+      "onsetCut": 0
+    },
+    {
+      "i": 4,
+      "t": 6.05,
+      "line": "NSFW.",
+      "speed": 1.178,
+      "spoken": 0.775,
+      "room": 0.94,
+      "fits": true,
+      "heard": "NSFW.",
+      "onsetCut": 0.093
+    },
+    {
+      "i": 5,
+      "t": 7.05,
+      "line": "Hacked accounts.",
+      "speed": 1,
+      "spoken": 0.831,
+      "room": 1.04,
+      "fits": true,
+      "heard": "Hacked Accounts.",
+      "onsetCut": 0
+    },
+    {
+      "i": 6,
+      "t": 8.15,
+      "line": "Meet Croak.",
+      "speed": 1,
+      "spoken": 0.717,
+      "room": 1.89,
+      "fits": true,
+      "heard": "Meet Croke.",
+      "onsetCut": 0
+    },
+    {
+      "i": 7,
+      "t": 10.1,
+      "line": "AI moderation for Discord.",
+      "speed": 1,
+      "spoken": 1.636,
+      "room": 1.89,
+      "fits": true,
+      "heard": "AI moderation for Discord.",
+      "onsetCut": 0
+    },
+    {
+      "i": 8,
+      "t": 12.05,
+      "line": "Links.",
+      "speed": 1.25,
+      "spoken": 0.42,
+      "room": 0.44,
+      "fits": true,
+      "heard": "Links.",
+      "onsetCut": 0.098
+    },
+    {
+      "i": 9,
+      "t": 12.55,
+      "line": "Invites.",
+      "speed": 1.45,
+      "spoken": 0.54,
+      "room": 0.51,
+      "fits": false,
+      "heard": "Invites.",
+      "onsetCut": 0
+    },
+    {
+      "i": 10,
+      "t": 13.12,
+      "line": "Images.",
+      "speed": 1,
+      "spoken": 0.651,
+      "room": 1.47,
+      "fits": true,
+      "heard": "images.",
+      "onsetCut": 0
+    },
+    {
+      "i": 11,
+      "t": 14.65,
+      "line": "Croaked in point two seconds.",
+      "speed": 1.194,
+      "spoken": 1.307,
+      "room": 1.34,
+      "fits": true,
+      "heard": "Croaked in 0.2 seconds.",
+      "onsetCut": 0.09
+    },
+    {
+      "i": 12,
+      "t": 16.05,
+      "line": "QR scams.",
+      "speed": 1.099,
+      "spoken": 0.959,
+      "room": 0.94,
+      "fits": true,
+      "heard": "QR scams.",
+      "onsetCut": 0.091
+    },
+    {
+      "i": 13,
+      "t": 17.05,
+      "line": "Look-alikes.",
+      "speed": 1,
+      "spoken": 0.726,
+      "room": 0.94,
+      "fits": true,
+      "heard": "Lookalikes.",
+      "onsetCut": 0
+    },
+    {
+      "i": 14,
+      "t": 18.05,
+      "line": "Scam images.",
+      "speed": 1.218,
+      "spoken": 0.821,
+      "room": 0.94,
+      "fits": true,
+      "heard": "Scam images.",
+      "onsetCut": 0.091
+    },
+    {
+      "i": 15,
+      "t": 19.05,
+      "line": "Spam blasts.",
+      "speed": 1.151,
+      "spoken": 0.949,
+      "room": 0.94,
+      "fits": true,
+      "heard": "SPAM BLASTS.",
+      "onsetCut": 0.095
+    },
+    {
+      "i": 16,
+      "t": 20.05,
+      "line": "Raids.",
+      "speed": 1,
+      "spoken": 0.743,
+      "room": 0.94,
+      "fits": true,
+      "heard": "raids.",
+      "onsetCut": 0
+    },
+    {
+      "i": 17,
+      "t": 21.05,
+      "line": "All handled.",
+      "speed": 1,
+      "spoken": 0.661,
+      "room": 0.99,
+      "fits": true,
+      "heard": "all handled.",
+      "onsetCut": 0
+    },
+    {
+      "i": 18,
+      "t": 22.1,
+      "line": "And your mods always get the last word.",
+      "speed": 1,
+      "spoken": 1.916,
+      "room": 2.39,
+      "fits": true,
+      "heard": "And your mods always get the last word.",
+      "onsetCut": 0
+    },
+    {
+      "i": 19,
+      "t": 24.55,
+      "line": "Cases.",
+      "speed": 1,
+      "spoken": 0.65,
+      "room": 0.94,
+      "fits": true,
+      "heard": "cases.",
+      "onsetCut": 0
+    },
+    {
+      "i": 20,
+      "t": 25.55,
+      "line": "Appeals.",
+      "speed": 1,
+      "spoken": 0.641,
+      "room": 0.94,
+      "fits": true,
+      "heard": "appeals.",
+      "onsetCut": 0
+    },
+    {
+      "i": 21,
+      "t": 26.55,
+      "line": "Lockdowns.",
+      "speed": 1,
+      "spoken": 0.794,
+      "room": 1.49,
+      "fits": true,
+      "heard": "lockdowns.",
+      "onsetCut": 0
+    },
+    {
+      "i": 22,
+      "t": 28.1,
+      "line": "Set it up in one command.",
+      "speed": 1,
+      "spoken": 1.285,
+      "room": 2.39,
+      "fits": true,
+      "heard": "set it up in one command.",
+      "onsetCut": 0
+    },
+    {
+      "i": 23,
+      "t": 30.55,
+      "line": "Free during early access.",
+      "speed": 1,
+      "spoken": 1.486,
+      "room": 1.59,
+      "fits": true,
+      "heard": "free during early access.",
+      "onsetCut": 0
+    },
+    {
+      "i": 24,
+      "t": 32.2,
+      "line": "Croak.",
+      "speed": 1,
+      "spoken": 0.377,
+      "room": 0.74,
+      "fits": true,
+      "heard": "croak.",
+      "onsetCut": 0
+    },
+    {
+      "i": 25,
+      "t": 33,
+      "line": "Spam croaks here.",
+      "speed": 1,
+      "spoken": 1.046,
+      "room": 2.94,
+      "fits": true,
+      "heard": "Spam croaks here.",
+      "onsetCut": 0
+    }
+  ]
+}

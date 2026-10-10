@@ -11,3 +11,6 @@ demo/*.mp4
 demo/showreel/.env
 demo/showreel/node_modules/
 demo/showreel/out/
+demo/showreel/public/audio/
+demo/showreel/public/vo/lines/
+demo/showreel/audio/spec.png

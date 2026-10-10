@@ -1,0 +1,22 @@
+{
+  "name": "croak-showreel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.jsx",
+    "render": "remotion render src/index.jsx Showreel out/showreel-raw.mp4 --concurrency=8",
+    "still": "remotion still src/index.jsx Showreel"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.534",
+    "@remotion/google-fonts": "^4.0.534",
+    "@remotion/motion-blur": "^4.0.534",
+    "@remotion/noise": "^4.0.534",
+    "@remotion/paths": "^4.0.534",
+    "@remotion/shapes": "^4.0.534",
+    "@remotion/transitions": "^4.0.534",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.534"
+  }
+}

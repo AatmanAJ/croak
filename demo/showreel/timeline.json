@@ -1,0 +1,515 @@
+{
+  "fps": 60,
+  "bpm": 120,
+  "duration": 36,
+  "key": "F minor",
+  "chords": [
+    "Fm",
+    "Db",
+    "Ab",
+    "Eb"
+  ],
+  "scenes": [
+    {
+      "id": "cold",
+      "start": 0,
+      "end": 2,
+      "what": "One scam message pops up in the dark"
+    },
+    {
+      "id": "spread",
+      "start": 2,
+      "end": 4,
+      "what": "Messages multiply into a storm, notification badge climbs to 99+"
+    },
+    {
+      "id": "chaos",
+      "start": 4,
+      "end": 8,
+      "what": "Kinetic word slams on each downbeat: FAKE NITRO / PHISHING / NSFW INVITES / HACKED ACCOUNTS. Hard cut to silence at 7.75"
+    },
+    {
+      "id": "meet",
+      "start": 8,
+      "end": 12,
+      "what": "DROP. Lime flash, eyes mark slams in and opens, wordmark, tagline at 10.0"
+    },
+    {
+      "id": "how",
+      "start": 12,
+      "end": 16,
+      "what": "Three scam messages land (link, invite, image), scanned, scored, tongue licks them away at 14.0, CROAKED stamp at 14.5, 0.19s readout"
+    },
+    {
+      "id": "montage",
+      "start": 16,
+      "end": 22,
+      "what": "Six one-second cuts: QR scams, look-alike domains, scam images, spam blasts, raids, all handled"
+    },
+    {
+      "id": "mods",
+      "start": 22,
+      "end": 28,
+      "what": "Mod-log case card, then Cases (24.5), Appeals (25.5), Lockdowns (26.5)"
+    },
+    {
+      "id": "setup",
+      "start": 28,
+      "end": 32,
+      "what": "/croak setup typed, enter at 29.5, success at 29.7, ONE COMMAND type. Hard cut to silence at 31.75"
+    },
+    {
+      "id": "end",
+      "start": 32,
+      "end": 36,
+      "what": "FINAL DROP. End card: eyes mark, Spam croaks here., Add to Discord. Sonic logo croak at 34.0, music resolves and rings out to 36"
+    }
+  ],
+  "music": [
+    {
+      "start": 0,
+      "end": 4,
+      "part": "intro",
+      "notes": "Dark filtered Fm pad, sub swell, sparse ticking hat from 2.0. No kick."
+    },
+    {
+      "start": 4,
+      "end": 7.75,
+      "part": "build",
+      "notes": "Kick on every beat, claps on 2 and 4, snare roll accelerating 6.0 to 7.75, noise riser 4.0 to 7.75, low-pass opening. Each downbeat at 4,5,6,7 gets a heavy hit."
+    },
+    {
+      "start": 7.75,
+      "end": 8,
+      "part": "gap",
+      "notes": "Total silence (a quarter beat of nothing)."
+    },
+    {
+      "start": 8,
+      "end": 16,
+      "part": "drop",
+      "notes": "Full groove: four-on-floor kick, clap 2 & 4, 16th hats, offbeat open hat, sidechained supersaw chords one per bar (Fm Db Ab Eb), sub bass on roots, pluck arp."
+    },
+    {
+      "start": 16,
+      "end": 22,
+      "part": "montage",
+      "notes": "Same groove with more energy: arp up an octave, extra percussion. Stutter fill 21.5 to 22."
+    },
+    {
+      "start": 22,
+      "end": 24,
+      "part": "breakdown",
+      "notes": "Kick out, filtered chords + pluck, lighter."
+    },
+    {
+      "start": 24,
+      "end": 28,
+      "part": "groove",
+      "notes": "Kick back in, accent stabs at 24.5, 25.5, 26.5."
+    },
+    {
+      "start": 28,
+      "end": 31.75,
+      "part": "build2",
+      "notes": "Thin drums, snare roll 30.0 to 31.75, riser."
+    },
+    {
+      "start": 31.75,
+      "end": 32,
+      "part": "gap",
+      "notes": "Silence."
+    },
+    {
+      "start": 32,
+      "end": 36,
+      "part": "final",
+      "notes": "Impact + big Fm chord, one bar of groove 32 to 34, then everything stops on 34.0 except a long reverb tail of the Fm chord ringing out to 36 (fade to zero by 35.9)."
+    }
+  ],
+  "sfx": [
+    {
+      "t": 0.25,
+      "type": "ping"
+    },
+    {
+      "t": 2.0,
+      "type": "ping"
+    },
+    {
+      "t": 2.25,
+      "type": "ping"
+    },
+    {
+      "t": 2.5,
+      "type": "ping"
+    },
+    {
+      "t": 2.75,
+      "type": "ping"
+    },
+    {
+      "t": 3.0,
+      "type": "ping"
+    },
+    {
+      "t": 3.125,
+      "type": "ping"
+    },
+    {
+      "t": 3.25,
+      "type": "ping"
+    },
+    {
+      "t": 3.375,
+      "type": "ping"
+    },
+    {
+      "t": 3.5,
+      "type": "ping"
+    },
+    {
+      "t": 3.5625,
+      "type": "ping"
+    },
+    {
+      "t": 3.625,
+      "type": "ping"
+    },
+    {
+      "t": 3.6875,
+      "type": "ping"
+    },
+    {
+      "t": 3.75,
+      "type": "ping"
+    },
+    {
+      "t": 3.8125,
+      "type": "ping"
+    },
+    {
+      "t": 3.875,
+      "type": "ping"
+    },
+    {
+      "t": 3.9375,
+      "type": "ping"
+    },
+    {
+      "t": 4.0,
+      "type": "slam"
+    },
+    {
+      "t": 5.0,
+      "type": "slam"
+    },
+    {
+      "t": 6.0,
+      "type": "slam"
+    },
+    {
+      "t": 7.0,
+      "type": "slam"
+    },
+    {
+      "t": 8.0,
+      "type": "impact"
+    },
+    {
+      "t": 8.3,
+      "type": "pop"
+    },
+    {
+      "t": 10.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 12.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 12.05,
+      "type": "pop"
+    },
+    {
+      "t": 12.55,
+      "type": "pop"
+    },
+    {
+      "t": 13.05,
+      "type": "pop"
+    },
+    {
+      "t": 13.1,
+      "type": "scan",
+      "end": 13.5
+    },
+    {
+      "t": 13.5,
+      "type": "ding"
+    },
+    {
+      "t": 14.0,
+      "type": "thwip"
+    },
+    {
+      "t": 14.36,
+      "type": "pop"
+    },
+    {
+      "t": 14.5,
+      "type": "stamp"
+    },
+    {
+      "t": 14.6,
+      "type": "ticker",
+      "end": 15.2
+    },
+    {
+      "t": 16.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 16.5,
+      "type": "glitch"
+    },
+    {
+      "t": 16.7,
+      "type": "stamp"
+    },
+    {
+      "t": 17.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 17.38,
+      "type": "pop"
+    },
+    {
+      "t": 18.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 18.5,
+      "type": "scan",
+      "end": 18.8
+    },
+    {
+      "t": 18.8,
+      "type": "ding"
+    },
+    {
+      "t": 19.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 19.5,
+      "type": "stamp"
+    },
+    {
+      "t": 20.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 20.5,
+      "type": "click"
+    },
+    {
+      "t": 20.5,
+      "type": "lock"
+    },
+    {
+      "t": 21.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 21.3,
+      "type": "ding"
+    },
+    {
+      "t": 22.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 22.8,
+      "type": "click"
+    },
+    {
+      "t": 23.5,
+      "type": "click"
+    },
+    {
+      "t": 24.45,
+      "type": "click"
+    },
+    {
+      "t": 25.42,
+      "type": "pop"
+    },
+    {
+      "t": 25.6,
+      "type": "type",
+      "end": 25.95
+    },
+    {
+      "t": 26.0,
+      "type": "pop"
+    },
+    {
+      "t": 26.5,
+      "type": "click"
+    },
+    {
+      "t": 26.6,
+      "type": "lock"
+    },
+    {
+      "t": 28.0,
+      "type": "whoosh"
+    },
+    {
+      "t": 28.2,
+      "type": "type",
+      "end": 28.9
+    },
+    {
+      "t": 29.05,
+      "type": "pop"
+    },
+    {
+      "t": 29.5,
+      "type": "enter"
+    },
+    {
+      "t": 29.7,
+      "type": "success"
+    },
+    {
+      "t": 30.5,
+      "type": "slam"
+    },
+    {
+      "t": 32.0,
+      "type": "impact"
+    },
+    {
+      "t": 33.0,
+      "type": "pop"
+    },
+    {
+      "t": 34.0,
+      "type": "croak"
+    },
+    {
+      "t": 34.45,
+      "type": "thwip"
+    }
+  ],
+  "vo": [
+    {
+      "t": 0.45,
+      "line": "It starts with one link."
+    },
+    {
+      "t": 2.2,
+      "line": "Then it's everywhere."
+    },
+    {
+      "t": 4.05,
+      "line": "Fake Nitro."
+    },
+    {
+      "t": 5.05,
+      "line": "Phishing."
+    },
+    {
+      "t": 6.05,
+      "line": "NSFW."
+    },
+    {
+      "t": 7.05,
+      "line": "Hacked accounts."
+    },
+    {
+      "t": 8.15,
+      "line": "Meet Croak."
+    },
+    {
+      "t": 10.1,
+      "line": "AI moderation for Discord."
+    },
+    {
+      "t": 12.05,
+      "line": "Links."
+    },
+    {
+      "t": 12.55,
+      "line": "Invites."
+    },
+    {
+      "t": 13.12,
+      "line": "Images."
+    },
+    {
+      "t": 14.65,
+      "line": "Croaked in point two seconds."
+    },
+    {
+      "t": 16.05,
+      "line": "QR scams."
+    },
+    {
+      "t": 17.05,
+      "line": "Look-alikes."
+    },
+    {
+      "t": 18.05,
+      "line": "Scam images."
+    },
+    {
+      "t": 19.05,
+      "line": "Spam blasts."
+    },
+    {
+      "t": 20.05,
+      "line": "Raids."
+    },
+    {
+      "t": 21.05,
+      "line": "All handled."
+    },
+    {
+      "t": 22.1,
+      "line": "And your mods always get the last word."
+    },
+    {
+      "t": 24.55,
+      "line": "Cases."
+    },
+    {
+      "t": 25.55,
+      "line": "Appeals."
+    },
+    {
+      "t": 26.55,
+      "line": "Lockdowns."
+    },
+    {
+      "t": 28.1,
+      "line": "Set it up in one command."
+    },
+    {
+      "t": 30.55,
+      "line": "Free during early access."
+    },
+    {
+      "t": 32.2,
+      "line": "Croak."
+    },
+    {
+      "t": 33.0,
+      "line": "Spam croaks here."
+    }
+  ]
+}
