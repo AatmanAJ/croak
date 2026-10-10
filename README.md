@@ -23,6 +23,14 @@ A Discord bot that checks every link, server invite and image posted in a server
 
 With Docker: `docker compose up -d --build`. The cache and settings are kept in `./data`.
 
+### On a server
+
+Croak keeps one connection to Discord open all the time, so it needs an always-on machine rather than serverless hosting. Anything with 1 GB of RAM is plenty: it uses about 300 MB.
+
+The reference setup is Ubuntu 24.04 on ARM with Node 24. Croak runs as a systemd service (`Restart=always`), and a cron job takes a daily copy of the database (`VACUUM INTO`), keeping the last 7.
+
+To ship changes, set `CROAK_HOST=ubuntu@<server-ip>` in `.env` and run `scripts/deploy.sh`. It copies the code and `.env` (never `data/`), reinstalls packages and restarts the bot. Run only one copy of Croak per bot token, otherwise every message gets handled twice.
+
 ## Commands
 
 Everything needs **Manage Messages**. Commands that change settings also need **Manage Server**. Allow and block entries only apply to the server they're made in.
