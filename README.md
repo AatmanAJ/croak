@@ -18,8 +18,9 @@ A Discord bot that checks every link, server invite and image posted in a server
    npm install
    npm start
    ```
-   On startup Croak prints two invite links: one with the permissions it needs, and one that also covers the optional features.
+   On startup Croak prints its invite link, which asks for every permission its features use (never Administrator).
 4. In your server, run `/croak setup channel:#mod-log`, or press **Create a private #croak-log** on the welcome message.
+5. In Server Settings → Roles, drag Croak's role above your members' roles. Discord adds a bot's role at the bottom, and a bot can't time out, kick or ban anyone whose top role is above its own.
 
 With Docker: `docker compose up -d --build`. The cache and settings are kept in `./data`.
 
@@ -121,7 +122,7 @@ Each message from someone who isn't a mod goes through these steps:
 - **Spending caps.** The AI is limited per day, in total and per server. After 5 failures in a row it pauses for a minute. While the AI is unavailable, new members are held and everyone else goes through.
 - **Cross-server blocks.** When mods in 3 different servers block the same item, it's blocked everywhere.
 - **Privacy.** Stored message text is wiped after 30 days, and a server's data is deleted when Croak is removed from it.
-- **No surprise errors.** Every action checks permissions first and reports what it couldn't do in the mod log.
+- **No surprise errors.** Every action checks permissions first. When something's missing, Croak says exactly what (a permission, or its role sitting below a member's) with a **Fix permissions** button, and it posts a "Croak needs a fix" card in the mod log whenever its permissions or role change for the worse.
 
 The numbers live in [src/config.js](src/config.js) and [src/settings.js](src/settings.js).
 

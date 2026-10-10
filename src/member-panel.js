@@ -4,6 +4,7 @@
 
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { COLORS } from './embeds.js';
+import { fixRow, whyNot } from './health.js';
 import { cleanUp, pardon } from './punish.js';
 import { ephemeral } from './toolkit.js';
 
@@ -93,7 +94,7 @@ export function createMemberActions({ db, kit, recent }) {
       );
     }
     if (action === 'banok') {
-      if (member && !member.bannable) return interaction.update({ content: "Croak can't ban them: their role is above Croak's, or it lacks Ban Members.", components: [] });
+      if (member && !member.bannable) return interaction.update({ content: `Couldn't ban them. ${whyNot(member, 'ban')}`, components: [fixRow(guild)] });
       const result = await guild.members
         .ban(userId, { reason: `Croak: by ${mod.tag}`, deleteMessageSeconds: 3600 })
         .then(() => 'Banned. Their last hour of messages was deleted.', (e) => `Ban failed: ${e.message}`);
@@ -101,6 +102,7 @@ export function createMemberActions({ db, kit, recent }) {
     }
 
     let note;
+    let failed = false;
     switch (action) {
       case 'watch':
         db.setWatch(guild.id, userId, Date.now() + 7 * DAY, mod.id);
@@ -125,7 +127,11 @@ export function createMemberActions({ db, kit, recent }) {
         break;
       }
       case 'timeout':
-        note = !member?.moderatable ? "Croak can't time them out (role too high, or missing Timeout Members)." : await member.timeout(60 * 60_000, `Croak: by ${mod.tag}`).then(() => 'Timed out for 1 hour.', (e) => `Timeout failed: ${e.message}`);
+        if (!member) note = 'They have left the server.';
+        else if (!member.moderatable) {
+          failed = true;
+          note = `Couldn't time them out. ${whyNot(member, 'timeout')}`;
+        } else note = await member.timeout(60 * 60_000, `Croak: by ${mod.tag}`).then(() => 'Timed out for 1 hour.', (e) => `Timeout failed: ${e.message}`);
         break;
       case 'untimeout':
         await pardon(member, { settings: db.getSettings(guild.id), by: mod.tag });
@@ -134,6 +140,7 @@ export function createMemberActions({ db, kit, recent }) {
       default:
         note = 'Unknown action.';
     }
-    return interaction.update(await memberPanel({ db, guild, userId, note: `✓ ${note}` }));
+    await interaction.update(await memberPanel({ db, guild, userId, note: `${failed ? '⚠️' : '✓'} ${note}` }));
+    if (failed) await interaction.followUp(ephemeral('Fix it once and every timeout, kick and ban works:', { components: [fixRow(guild)] })).catch(() => {});
   };
 }

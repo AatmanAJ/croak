@@ -102,7 +102,7 @@ export function createToolkit({ client, db, automod, log = console.log }) {
       const target = channel.isThread() ? channel.parent : channel;
       const me = guild.members.me;
       if (!target?.permissionsFor(me)?.has(PermissionFlagsBits.ManageWebhooks)) {
-        return 'Could not repost it (Croak needs Manage Webhooks); they can post it again.';
+        return "Could not repost it: Croak doesn't have the Manage Webhooks permission (press Fix permissions in `/croak status`). They can post it again.";
       }
       try {
         const hooks = await target.fetchWebhooks();

@@ -7,7 +7,7 @@
 // register /croak there instantly instead of globally.
 
 import './env.js';
-import { Client, Events, GatewayIntentBits, GuildNSFWLevel, MessageFlags, Options, PermissionFlagsBits, PermissionsBitField } from 'discord.js';
+import { Client, Events, GatewayIntentBits, GuildNSFWLevel, MessageFlags, Options } from 'discord.js';
 import { decide } from './ai/decisions.js';
 import { MODERATION_QUESTIONS } from './ai/questions.js';
 import { createAutomodSync } from './automod.js';
@@ -22,13 +22,10 @@ import { createLockdown } from './lockdown.js';
 import { createModerator } from './moderate.js';
 import { contextCommands } from './reports.js';
 import { createRepeatTracker } from './repeats.js';
+import { createHealthWatch, inviteUrl } from './health.js';
 import { createToolkit } from './toolkit.js';
 import { createRaidDetector, createRecentMessages } from './trackers.js';
 
-const P = PermissionFlagsBits;
-// What Croak needs to do its job, and the extras that unlock optional features
-const CORE_PERMISSIONS = [P.ViewChannel, P.SendMessages, P.EmbedLinks, P.ReadMessageHistory, P.ManageMessages, P.ModerateMembers, P.ManageWebhooks];
-const FULL_PERMISSIONS = [...CORE_PERMISSIONS, P.ManageGuild, P.ManageChannels, P.ManageRoles, P.KickMembers, P.BanMembers];
 const INVITE_CACHE_MS = 10 * 60 * 1000;
 
 for (const name of ['DISCORD_TOKEN', 'OPENAI_API_KEY']) {
@@ -88,6 +85,7 @@ const kit = createToolkit({ client, db, automod, log });
 const lockdown = createLockdown({ client, db, kit, log });
 const interactions = createInteractions({ client, db, automod, kit, judge, moderator, recent, raids, lockdown, log });
 const commands = createCommands({ db, judge, resolveInvite, automod, lockdown, interactions });
+const health = createHealthWatch({ client, db, kit, log });
 const stopJobs = startJobs({ db, log });
 const stopDigests = startDigests({ client, db, kit, log });
 const ALL_COMMANDS = [croakCommand, ...contextCommands];
@@ -103,12 +101,11 @@ client.once(Events.ClientReady, async (c) => {
     .then(() => log('OpenAI Decisions API reachable'))
     .catch((err) => log('OpenAI Decisions API check failed:', err.message));
 
-  const invite = (perms) =>
-    `https://discord.com/oauth2/authorize?client_id=${c.application.id}&scope=bot+applications.commands&permissions=${PermissionsBitField.resolve(perms)}`;
   log(`Logged in as ${c.user.tag}, in ${c.guilds.cache.size} server(s): ${c.guilds.cache.map((g) => `${g.name} (${g.id})`).join(', ')}`);
-  log(`Invite link: ${invite(CORE_PERMISSIONS)}`);
-  log(`Invite link with every optional feature: ${invite(FULL_PERMISSIONS)}`);
+  log(`Invite link (every permission Croak uses): ${inviteUrl(c.application.id)}`);
   lockdown.resume();
+  // check every server once at start-up, a little apart
+  [...c.guilds.cache.values()].forEach((g, i) => health.schedule(g, 3000 + i * 500));
   try {
     const devGuild = process.env.DEV_GUILD_ID && c.guilds.cache.get(process.env.DEV_GUILD_ID);
     if (devGuild) {
@@ -160,7 +157,15 @@ client.on(Events.InteractionCreate, (interaction) => {
 client.on(Events.GuildCreate, (guild) => {
   log(`Joined ${guild.name} (${guild.id})`);
   welcome(guild, log);
+  health.schedule(guild);
 });
+
+// Re-check Croak's permissions whenever roles or channel permissions change (say, a mod drags
+// Croak's role up, or re-authorizes it with more permissions)
+client.on(Events.GuildRoleCreate, (role) => health.schedule(role.guild));
+client.on(Events.GuildRoleUpdate, (_, role) => health.schedule(role.guild));
+client.on(Events.GuildRoleDelete, (role) => health.schedule(role.guild));
+client.on(Events.ChannelUpdate, (_, channel) => channel.guild && health.schedule(channel.guild));
 
 // Only fires when Croak is removed (an outage fires GuildUnavailable instead): forget the server
 client.on(Events.GuildDelete, (guild) => {

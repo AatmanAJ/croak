@@ -2,6 +2,7 @@
 // ("croak:<verb>:<args>"), plus the right-click commands.
 
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } from 'discord.js';
+import { fixRow } from './health.js';
 import { createAppeals } from './appeals.js';
 import { createCaseActions } from './case-actions.js';
 import { createMemberActions } from './member-panel.js';
@@ -26,7 +27,11 @@ export function createInteractions({ client, db, automod, kit, judge, moderator,
     const guild = interaction.guild;
     const me = guild.members.me;
     if (!me.permissions.has(P.ManageChannels)) {
-      return interaction.reply(ephemeral("Croak can't create channels here. Make a private channel yourself, add Croak to it, then run `/croak setup channel:#that-channel`."));
+      return interaction.reply(
+        ephemeral("Croak doesn't have the Manage Channels permission, so it can't create the channel. Press **Fix permissions**, or make a private channel yourself, add Croak to it, and run `/croak setup channel:#that-channel`.", {
+          components: [fixRow(guild)],
+        }),
+      );
     }
     const modRoles = guild.roles.cache.filter((r) => !r.managed && r.id !== guild.id && r.permissions.has(P.ManageMessages));
     try {
@@ -54,8 +59,8 @@ export function createInteractions({ client, db, automod, kit, judge, moderator,
     const guild = interaction.guild;
     if (verb === 'lock') {
       await interaction.deferReply();
-      const { summary } = await lockdown.start(guild, { minutes: Number(arg) || 30, by: interaction.user });
-      return interaction.editReply({ content: `${interaction.user} started a lockdown. ${summary}`, allowedMentions: { parse: [] } });
+      const { summary, blocked } = await lockdown.start(guild, { minutes: Number(arg) || 30, by: interaction.user });
+      return interaction.editReply({ content: `${interaction.user} started a lockdown. ${summary}`, components: blocked ? [fixRow(guild)] : [], allowedMentions: { parse: [] } });
     }
     if (verb === 'unlock') {
       await interaction.deferReply();

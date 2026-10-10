@@ -7,6 +7,7 @@ import { memberPanel } from './member-panel.js';
 import { extractItems } from './extract.js';
 import { normalizeUrl } from './links.js';
 import { clearModDecision, saveModDecision } from './overrides.js';
+import { diagnose, fixRow, problemLines } from './health.js';
 import { formatMinutes } from './punish.js';
 import { ESCALATIONS, PRESETS, policyFor, toggleInList } from './settings.js';
 
@@ -192,16 +193,22 @@ export function createCommands({ db, judge, resolveInvite, automod, lockdown, in
     }
 
     const settings = db.updateSettings(interaction.guildId, { logChannelId: channel.id, ...(timeoutMinutes != null && { timeoutMinutes }) });
-    return reply(
-      interaction,
-      [
+    // Say straight away if something will stop Croak working, rather than letting actions fail later
+    const health = diagnose(interaction.guild, settings);
+    return interaction.reply({
+      content: [
         `Done. Croak will post to ${channel}.`,
         settings.timeoutMinutes > 0
           ? `Anyone whose message is croaked gets a ${formatMinutes(settings.timeoutMinutes)} timeout.`
           : 'Croak will not time anyone out.',
-        'Run `/croak status` to check permissions and see every setting.',
+        ...(health.ok
+          ? ['Every permission is in place, so every feature works. `/croak status` shows every setting.']
+          : ['', '⚠️ **Before it can do everything, fix this:**', ...problemLines(interaction.guild, health)]),
       ].join('\n'),
-    );
+      components: health.ok ? [] : [fixRow(interaction.guild)],
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: { parse: [] },
+    });
   }
 
   function healthChecks(guild, settings) {
@@ -238,8 +245,10 @@ export function createCommands({ db, judge, resolveInvite, automod, lockdown, in
   async function status(interaction) {
     const settings = db.getSettings(interaction.guildId);
     const today = db.statsSince(interaction.guildId, 1);
+    const checks = healthChecks(interaction.guild, settings);
     return interaction.reply({
-      embeds: [statusEmbed({ guild: interaction.guild, settings, checks: healthChecks(interaction.guild, settings), today, limits: config.ai })],
+      embeds: [statusEmbed({ guild: interaction.guild, settings, checks, today, limits: config.ai })],
+      components: checks.every((c) => c.ok) ? [] : [fixRow(interaction.guild)],
       flags: MessageFlags.Ephemeral,
       allowedMentions: { parse: [] },
     });
@@ -405,12 +414,12 @@ export function createCommands({ db, judge, resolveInvite, automod, lockdown, in
   async function lockdownCmd(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     if (interaction.options.getString('action', true) === 'off') return interaction.editReply(await lockdown.end(interaction.guild, interaction.user));
-    const { summary } = await lockdown.start(interaction.guild, {
+    const { summary, blocked } = await lockdown.start(interaction.guild, {
       minutes: interaction.options.getInteger('minutes') ?? 30,
       slowmode: interaction.options.getInteger('slowmode_seconds') ?? 30,
       by: interaction.user,
     });
-    return interaction.editReply(summary);
+    return interaction.editReply({ content: summary, components: blocked ? [fixRow(interaction.guild)] : [] });
   }
 
   async function dmNote(interaction) {

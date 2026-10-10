@@ -3,6 +3,7 @@
 // Every step checks Croak's permissions first and reports what it couldn't do, never throws.
 
 import { PermissionFlagsBits } from 'discord.js';
+import { whyNot } from './health.js';
 import { ESCALATIONS } from './settings.js';
 
 const LONG_TIMEOUT_MINUTES = 24 * 60;
@@ -25,14 +26,14 @@ export async function punish(member, { settings, strikes, reason }) {
   const me = member.guild.members.me;
 
   if (step === 'kick') {
-    if (!member.kickable) return 'Could not kick them: Croak needs Kick Members and a role above theirs.';
+    if (!member.kickable) return `Could not kick them. ${whyNot(member, 'kick')}`;
     return member
       .kick(tag)
       .then(() => `Kicked (croak #${strikes} in 30 days).`)
       .catch((err) => `Kick failed: ${err.message}.`);
   }
   if (step === 'ban') {
-    if (!member.bannable) return 'Could not ban them: Croak needs Ban Members and a role above theirs.';
+    if (!member.bannable) return `Could not ban them. ${whyNot(member, 'ban')}`;
     return member
       .ban({ reason: tag, deleteMessageSeconds: 3600 })
       .then(() => `Banned (croak #${strikes} in 30 days). Their last hour of messages was deleted.`)
@@ -54,7 +55,7 @@ export async function punish(member, { settings, strikes, reason }) {
       .catch((err) => `Quarantine failed: ${err.message}.`);
   }
 
-  if (!member.moderatable) return "Could not time them out: their role is above Croak's, or Croak lacks Moderate Members.";
+  if (!member.moderatable) return `Could not time them out. ${whyNot(member, 'timeout')}`;
   return member
     .timeout(minutes * 60_000, tag)
     .then(() => `Timed out for ${formatMinutes(minutes)}${strikes > 1 ? ` (croak #${strikes} in 30 days)` : ''}.`)

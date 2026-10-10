@@ -75,16 +75,17 @@ export function createLockdown({ client, db, kit, log = console.log }) {
         notes.push(`Couldn't pause invites: ${err.message}.`);
       }
     } else if (!me.permissions.has(P.ManageGuild)) {
-      notes.push('Invites not paused: Croak needs Manage Server for that.');
+      notes.push("Invites not paused: Croak doesn't have the Manage Server permission.");
     }
-    if (!slowed && !me.permissions.has(P.ManageChannels)) notes.push('No slowmode: Croak needs Manage Channels for that.');
+    if (!slowed && !me.permissions.has(P.ManageChannels)) notes.push("No slowmode: Croak doesn't have the Manage Channels permission.");
+    const blocked = !me.permissions.has(P.ManageGuild) || !me.permissions.has(P.ManageChannels);
 
     db.putLockdown(guild.id, { endsAt, by: by?.id ?? null, state });
     schedule(guild.id, endsAt);
     const summary = [`🔒 ${slowed} channel${slowed === 1 ? '' : 's'} on ${slowmode}s slowmode${state.invitesPaused ? ', invites paused' : ''}.`, ...notes].join(' ');
     log(`${guild.name}: lockdown on (${summary})`);
     await kit.logChannelFor(guild.id)?.send({ embeds: [lockdownEmbed({ on: true, by: by ?? 'Croak', endsAt, notes: [summary] })], components: lockdownButtons() }).catch(() => {});
-    return { summary, endsAt };
+    return { summary, endsAt, blocked };
   }
 
   /** Undo a lockdown: each channel's slowmode back to what it was, invites back on if Croak paused them. */

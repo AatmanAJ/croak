@@ -3,6 +3,7 @@
 
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, ModalBuilder, PermissionFlagsBits, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { modReplyDM, resolvedEmbed } from './embeds.js';
+import { fixRow, lacks, whyNot } from './health.js';
 import { memberPanel } from './member-panel.js';
 import { pardon, punish } from './punish.js';
 import { ephemeral } from './toolkit.js';
@@ -115,28 +116,28 @@ export function createCaseActions({ client, db, kit, log = console.log }) {
         break;
       }
       case 'timeout':
-        done = !member ? 'They have left the server.' : !member.moderatable ? "Croak can't time them out (role too high, or missing Timeout Members)." : await member.timeout(DAY, `Croak: by ${mod.tag} from case #${found.id}`).then(() => 'Timed out for 1 day.', (e) => `Timeout failed: ${e.message}`);
+        done = !member ? 'They have left the server.' : !member.moderatable ? `Couldn't time them out. ${whyNot(member, 'timeout')}` : await member.timeout(DAY, `Croak: by ${mod.tag} from case #${found.id}`).then(() => 'Timed out for 1 day.', (e) => `Timeout failed: ${e.message}`);
         break;
       case 'untimeout':
         if (member) await pardon(member, { settings: db.getSettings(guild.id), by: mod.tag });
         done = member ? 'Timeout and quarantine role removed.' : 'They have left the server.';
         break;
       case 'kick':
-        done = !member ? 'They have left the server.' : !member.kickable ? "Croak can't kick them (role too high, or missing Kick Members)." : await member.kick(`Croak: by ${mod.tag} from case #${found.id}`).then(() => 'Kicked.', (e) => `Kick failed: ${e.message}`);
+        done = !member ? 'They have left the server.' : !member.kickable ? `Couldn't kick them. ${whyNot(member, 'kick')}` : await member.kick(`Croak: by ${mod.tag} from case #${found.id}`).then(() => 'Kicked.', (e) => `Kick failed: ${e.message}`);
         break;
       default:
         done = 'Unknown action.';
     }
     await kit.addHistory(found, `${mod}: ${done}`, { actorId: mod.id, text: done });
-    return interaction.editReply(done);
+    return interaction.editReply(/^Couldn't/.test(done) ? { content: done, components: [fixRow(guild)] } : done);
   }
 
   async function confirmBan(interaction, found) {
     if (!(await kit.allowed(interaction, P.BanMembers, 'Ban Members'))) return;
-    const me = interaction.guild.members.me;
-    if (!me.permissions.has(P.BanMembers)) return interaction.update({ content: 'Croak needs the Ban Members permission for that.', components: [] });
+    const missing = lacks(interaction.guild, P.BanMembers);
+    if (missing) return interaction.update({ content: `Couldn't ban them. ${missing}`, components: [fixRow(interaction.guild)] });
     const member = await kit.memberOf(found.guild_id, found.author_id);
-    if (member && !member.bannable) return interaction.update({ content: "Croak can't ban them: their role is above Croak's.", components: [] });
+    if (member && !member.bannable) return interaction.update({ content: `Couldn't ban them. ${whyNot(member, 'ban')}`, components: [fixRow(interaction.guild)] });
     const result = await interaction.guild.members
       .ban(found.author_id, { reason: `Croak: by ${interaction.user.tag} from case #${found.id}`, deleteMessageSeconds: 3600 })
       .then(() => 'Banned. Their last hour of messages was deleted.', (e) => `Ban failed: ${e.message}`);
